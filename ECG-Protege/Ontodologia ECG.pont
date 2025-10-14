@@ -1,0 +1,137 @@
+; Tue Oct 14 18:53:52 CEST 2025
+; 
+;+ (version "3.4.8")
+;+ (build "Build 629")
+
+
+(defclass %3ACLIPS_TOP_LEVEL_SLOT_CLASS "Fake class to save top-level slot information"
+	(is-a USER)
+	(role abstract))
+
+(defclass COMPONENTE_SE%C3%91AL_ECG
+	(is-a USER)
+	(role abstract))
+
+(defclass ONDA
+	(is-a COMPONENTE_SE%C3%91AL_ECG)
+	(role abstract))
+
+(defclass ONDA_P
+	(is-a ONDA)
+	(role concrete))
+
+(defclass ONDA_Q
+	(is-a ONDA)
+	(role concrete))
+
+(defclass ONDA_R
+	(is-a ONDA)
+	(role concrete))
+
+(defclass ONDA_S
+	(is-a ONDA)
+	(role concrete))
+
+(defclass ONDA_T
+	(is-a ONDA)
+	(role concrete))
+
+(defclass SEGMENTO
+	(is-a COMPONENTE_SE%C3%91AL_ECG)
+	(role abstract))
+
+(defclass SEGMENTO_PQ
+	(is-a SEGMENTO)
+	(role concrete))
+
+(defclass SEGMENTO_ST
+	(is-a SEGMENTO)
+	(role concrete))
+
+(defclass SEGMENTO_RR
+	(is-a SEGMENTO)
+	(role concrete))
+
+(defclass INTERVALO
+	(is-a COMPONENTE_SE%C3%91AL_ECG)
+	(role abstract))
+
+(defclass INTERVALO_PR
+	(is-a INTERVALO)
+	(role concrete))
+
+(defclass INTERVALO_QT
+	(is-a INTERVALO)
+	(role concrete))
+
+(defclass INTERVALO_RR
+	(is-a INTERVALO)
+	(role concrete))
+
+(defclass COMPLEJO
+	(is-a COMPONENTE_SE%C3%91AL_ECG)
+	(role abstract))
+
+(defclass COMPLEJO_QRS
+	(is-a COMPLEJO)
+	(role concrete))
+
+(defclass CONTEXTO_TEMPORAL
+	(is-a COMPONENTE_SE%C3%91AL_ECG)
+	(role abstract))
+
+(defclass CICLO_CARDIACO
+	(is-a CONTEXTO_TEMPORAL)
+	(role concrete))
+
+(defclass SE%C3%91AL_ECG
+	(is-a CONTEXTO_TEMPORAL)
+	(role concrete))
+
+(defclass ANALISIS_SE%C3%91AL
+	(is-a COMPONENTE_SE%C3%91AL_ECG)
+	(role concrete))
+
+(defclass DIAGNOSTICO_INFERIDO
+	(is-a COMPONENTE_SE%C3%91AL_ECG)
+	(role abstract))
+
+(defclass ANORMALIDAD_SIMPLE
+	(is-a DIAGNOSTICO_INFERIDO)
+	(role abstract))
+
+(defclass HIPOTASEMIA
+	(is-a ANORMALIDAD_SIMPLE)
+	(role concrete))
+
+(defclass HIPOCALCEMIA
+	(is-a ANORMALIDAD_SIMPLE)
+	(role concrete))
+
+(defclass INFARTO_AGUDO_MIOCARDIO
+	(is-a ANORMALIDAD_SIMPLE)
+	(role concrete))
+
+(defclass ISQUEMIA_CORONARIA
+	(is-a ANORMALIDAD_SIMPLE)
+	(role concrete))
+
+(defclass ANORMALIDAD_COMPLEJA
+	(is-a DIAGNOSTICO_INFERIDO)
+	(role abstract))
+
+(defclass BRADICARDIA_SINUSAL
+	(is-a ANORMALIDAD_COMPLEJA)
+	(role concrete))
+
+(defclass TAQUICARDIA_SINUSAL
+	(is-a ANORMALIDAD_COMPLEJA)
+	(role concrete))
+
+(defclass FLUTTER_AURICULAR
+	(is-a ANORMALIDAD_COMPLEJA)
+	(role concrete))
+
+(defclass KB_655942_Class35
+	(is-a ANORMALIDAD_COMPLEJA)
+	(role concrete))
