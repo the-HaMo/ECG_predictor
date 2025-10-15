@@ -1,20 +1,82 @@
-; Tue Oct 14 18:53:52 CEST 2025
+; Wed Oct 15 18:28:26 CEST 2025
 ; 
-;+ (version "3.4.8")
-;+ (build "Build 629")
+;+ (version "3.5")
+;+ (build "Build 663")
 
 
 (defclass %3ACLIPS_TOP_LEVEL_SLOT_CLASS "Fake class to save top-level slot information"
 	(is-a USER)
-	(role abstract))
+	(role abstract)
+	(single-slot Ciclos
+;+		(comment "Número de bloques Q-T")
+		(type INTEGER)
+;+		(cardinality 1 1)
+		(create-accessor read-write))
+	(single-slot Peak
+;+		(comment "Pico máximo de la onda.")
+		(type FLOAT)
+		(range 1.0 1.0)
+;+		(cardinality 1 1)
+		(create-accessor read-write))
+	(single-slot End
+;+		(comment "Instante de finalización de la onda.")
+		(type FLOAT)
+		(range 1.0 1.0)
+;+		(cardinality 1 1)
+		(create-accessor read-write))
+	(single-slot Ritmo_Cardiaco
+;+		(comment "Es el numero de pulsaciones por minuto del corazón.")
+		(type INTEGER)
+;+		(cardinality 1 1)
+		(create-accessor read-write))
+	(single-slot Start
+;+		(comment "Instante del comienzo de la onda.")
+		(type FLOAT)
+		(range 1.0 1.0)
+;+		(cardinality 1 1)
+		(create-accessor read-write))
+	(single-slot Resultado
+;+		(comment "Resultado obtenido a partir del análisis del ECG.")
+		(type SYMBOL)
+;+		(allowed-parents ANORMALIDAD_COMPLEJA ANORMALIDAD_SIMPLE)
+;+		(cardinality 1 1)
+		(create-accessor read-write))
+	(single-slot Tiempo_de_ciclo
+;+		(comment "Duración total de un ciclo cardíaco.")
+		(type FLOAT)
+;+		(cardinality 1 1)
+		(create-accessor read-write))
+	(single-slot Duracion_total
+;+		(comment "Tiempo total de toda la señal del electrocardiograma")
+		(type FLOAT)
+;+		(cardinality 1 1)
+		(create-accessor read-write)))
 
-(defclass COMPONENTE_SE%C3%91AL_ECG
+(defclass COMPONENTE_SE%C3%91AL_ECG "Clase que agrupa todos los componentes de una señal ECG."
 	(is-a USER)
 	(role abstract))
 
-(defclass ONDA
+(defclass ONDA "Representación de cualquier componente ondulatoria de la señal."
 	(is-a COMPONENTE_SE%C3%91AL_ECG)
-	(role abstract))
+	(role abstract)
+	(single-slot Start
+;+		(comment "Instante del comienzo de la onda.")
+		(type FLOAT)
+		(range 1.0 1.0)
+;+		(cardinality 1 1)
+		(create-accessor read-write))
+	(single-slot End
+;+		(comment "Instante de finalización de la onda.")
+		(type FLOAT)
+		(range 1.0 1.0)
+;+		(cardinality 1 1)
+		(create-accessor read-write))
+	(single-slot Peak
+;+		(comment "Pico máximo de la onda.")
+		(type FLOAT)
+		(range 1.0 1.0)
+;+		(cardinality 1 1)
+		(create-accessor read-write)))
 
 (defclass ONDA_P
 	(is-a ONDA)
@@ -80,21 +142,47 @@
 	(is-a COMPONENTE_SE%C3%91AL_ECG)
 	(role abstract))
 
-(defclass CICLO_CARDIACO
+(defclass CICLO_CARDIACO "Representa una repetición completa del conjunto de ondas P-Q-R-S-T"
 	(is-a CONTEXTO_TEMPORAL)
-	(role concrete))
+	(role concrete)
+	(single-slot Tiempo_de_ciclo
+;+		(comment "Duración total de un ciclo cardíaco.")
+		(type FLOAT)
+;+		(cardinality 1 1)
+		(create-accessor read-write)))
 
-(defclass SE%C3%91AL_ECG
+(defclass SE%C3%91AL_ECG "Representa el registro completo de actividad eléctrica cardiaca obtenida mediante el electrocardiograma"
 	(is-a CONTEXTO_TEMPORAL)
-	(role concrete))
+	(role concrete)
+	(single-slot Duracion_total
+;+		(comment "Tiempo total de toda la señal del electrocardiograma")
+		(type FLOAT)
+;+		(cardinality 1 1)
+		(create-accessor read-write)))
 
-(defclass ANALISIS_SE%C3%91AL
+(defclass ANALISIS_SE%C3%91AL "Clase que calcula todos los atributos derivados a partir de la señal ECG (Inferidos por el Motor de Inferencia)"
 	(is-a COMPONENTE_SE%C3%91AL_ECG)
-	(role concrete))
+	(role concrete)
+	(single-slot Ciclos
+;+		(comment "Número de bloques Q-T")
+		(type INTEGER)
+;+		(cardinality 1 1)
+		(create-accessor read-write))
+	(single-slot Ritmo_Cardiaco
+;+		(comment "Es el numero de pulsaciones por minuto del corazón.")
+		(type INTEGER)
+;+		(cardinality 1 1)
+		(create-accessor read-write)))
 
-(defclass DIAGNOSTICO_INFERIDO
+(defclass DIAGNOSTICO_INFERIDO "Resultado obtenido a partir del análisis ECG."
 	(is-a COMPONENTE_SE%C3%91AL_ECG)
-	(role abstract))
+	(role abstract)
+	(single-slot Resultado
+;+		(comment "Resultado obtenido a partir del análisis del ECG.")
+		(type SYMBOL)
+;+		(allowed-parents ANORMALIDAD_COMPLEJA ANORMALIDAD_SIMPLE)
+;+		(cardinality 1 1)
+		(create-accessor read-write)))
 
 (defclass ANORMALIDAD_SIMPLE
 	(is-a DIAGNOSTICO_INFERIDO)
