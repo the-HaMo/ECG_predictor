@@ -125,7 +125,7 @@ Nuestra estructura jerárquica se organiza en 4 niveles:
 - Análisis de señal  
 - Resultado del diagnóstico  
 
-![Esquema completo de la ontología ECG](ECG-doc/img/schema-ont.png)
+![Esquema completo de la ontología ECG](https://github.com/the-HaMo/ECG_predictor/blob/main/ECG-doc/img/schema-ont.png)
 
 ---
 
@@ -147,8 +147,7 @@ Nuestra estructura jerárquica se organiza en 4 niveles:
 A continuación, se muestra un grafo que describe de forma completa nuestra ontología.  
 Las clases **Anormalidad compleja** y **Anormalidad simple** no incluyen sus subclases, con el fin de mantener la representación lo más sencilla posible.
 
-![Grafo completo de la ontología ECG](ECG-doc/img/graph-ont.png)
-
+![Grafo completo de la ontología ECG](https://github.com/the-HaMo/ECG_predictor/blob/main/ECG-doc/img/graph-ont.png)
 
 ---
 
