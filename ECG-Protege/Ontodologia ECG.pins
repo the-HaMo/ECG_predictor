@@ -1,4 +1,182 @@
-; Wed Oct 15 18:28:26 CEST 2025
+; Thu Oct 23 12:47:59 CEST 2025
 ; 
-;+ (version "3.5")
-;+ (build "Build 663")
+;+ (version "3.4.8")
+;+ (build "Build 629")
+
+([INTERVALO] of  %3ASTANDARD-CLASS
+
+	(%3ASLOT-CONSTRAINTS
+		[Ontodologia+ECG_Class6]
+		[Ontodologia+ECG_Class7]))
+
+([ONDA] of  %3ASTANDARD-CLASS
+
+	(%3ASLOT-CONSTRAINTS
+		[Ontodologia+ECG_Class1]
+		[Ontodologia+ECG_Class2]))
+
+([ONDA_P] of  %3ASTANDARD-CLASS
+
+	(%3ASLOT-CONSTRAINTS [Ontodologia+ECG_Class9]))
+
+([ONDA_Q] of  %3ASTANDARD-CLASS
+
+	(%3ASLOT-CONSTRAINTS [Ontodologia+ECG_Class11]))
+
+([ONDA_R] of  %3ASTANDARD-CLASS
+
+	(%3ASLOT-CONSTRAINTS [Ontodologia+ECG_Class12]))
+
+([ONDA_S] of  %3ASTANDARD-CLASS
+
+	(%3ASLOT-CONSTRAINTS [Ontodologia+ECG_Class13]))
+
+([ONDA_T] of  %3ASTANDARD-CLASS
+
+	(%3ASLOT-CONSTRAINTS [Ontodologia+ECG_Class14]))
+
+([Ontodologia+ECG_Class0] of  %3APAL-CONSTRAINT
+)
+
+([Ontodologia+ECG_Class1] of  %3APAL-CONSTRAINT
+
+	(%3APAL-DESCRIPTION "Una onda su incio empieza por P y termina por T comenzando la siguiente onda por P.")
+	(%3APAL-NAME "Las ondas deben seguir el orden correcto P, Q, R, S, T")
+	(%3APAL-STATEMENT "(defrange ?ondaP :FRAME Onda_P)\n(defrange ?ondaQ :FRAME Onda_Q)\n(defrange ?ondaR :FRAME Onda_R)\n(defrange ?ondaS :FRAME Onda_S)\n(defrange ?ondaT :FRAME Onda_T)\n\n; La onda Q debe comenzar después de que termine la onda P\n(forall ?ondaP\n        (forall ?ondaQ\n                (=> (and (own-slot-not-null End ?ondaP)\n                         (own-slot-not-null Start ?ondaQ))\n                    (>= (Start ?ondaQ) (End ?ondaP))\n                )\n        )\n)\n\n; La onda R debe comenzar después de que termine la onda Q\n(forall ?ondaQ\n        (forall ?ondaR\n                (=> (and (own-slot-not-null End ?ondaQ)\n                         (own-slot-not-null Start ?ondaR))\n                    (>= (Start ?ondaR) (End ?ondaQ))\n                )\n        )\n)\n\n; La onda S debe comenzar después de que termine la onda R\n(forall ?ondaR\n        (forall ?ondaS\n                (=> (and (own-slot-not-null End ?ondaR)\n                         (own-slot-not-null Start ?ondaS))\n                    (>= (Start ?ondaS) (End ?ondaR))\n                )\n        )\n)\n\n; La onda T debe comenzar después de que termine la onda S\n(forall ?ondaS\n        (forall ?ondaT\n                (=> (and (own-slot-not-null End ?ondaS)\n                         (own-slot-not-null Start ?ondaT))\n                    (>= (Start ?ondaT) (End ?ondaS))\n                )\n        )\n)\n"))
+
+([Ontodologia+ECG_Class11] of  %3APAL-CONSTRAINT
+
+	(%3APAL-NAME "Amplitud negativa")
+	(%3APAL-STATEMENT "(defrange ?ondaQ :FRAME Onda_Q)\n\n; La onda Q debe ser negativa\n(forall ?ondaQ\n        (=> (own-slot-not-null Peak ?ondaQ)\n            (< (Peak ?ondaQ) 0)\n        )\n)\n\n; End > Start\n(forall ?ondaQ\n        (=> (and (own-slot-not-null Start ?ondaQ)\n                 (own-slot-not-null End ?ondaQ))\n            (> (End ?ondaQ) (Start ?ondaQ))\n        )\n)\n"))
+
+([Ontodologia+ECG_Class12] of  %3APAL-CONSTRAINT
+
+	(%3APAL-NAME "Amplitud positiva")
+	(%3APAL-STATEMENT "(defrange ?ondaR :FRAME Onda_R)\n\n; La onda R debe ser positiva\n(forall ?ondaR\n        (=> (own-slot-not-null Peak ?ondaR)\n            (> (Peak ?ondaR) 0)\n        )\n)\n\n; End > Start\n(forall ?ondaR\n        (=> (and (own-slot-not-null Start ?ondaR)\n                 (own-slot-not-null End ?ondaR))\n            (> (End ?ondaR) (Start ?ondaR))\n        )\n)\n\n"))
+
+([Ontodologia+ECG_Class13] of  %3APAL-CONSTRAINT
+
+	(%3APAL-NAME "Amplitud negativa")
+	(%3APAL-STATEMENT "(defrange ?ondaS :FRAME Onda_S)\n\n; La onda S debe ser negativa\n(forall ?ondaS\n        (=> (own-slot-not-null Peak ?ondaS)\n            (< (Peak ?ondaS) 0)\n        )\n)\n\n; End > Start\n(forall ?ondaS\n        (=> (and (own-slot-not-null Start ?ondaS)\n                 (own-slot-not-null End ?ondaS))\n            (> (End ?ondaS) (Start ?ondaS))\n        )\n)\n"))
+
+([Ontodologia+ECG_Class14] of  %3APAL-CONSTRAINT
+
+	(%3APAL-NAME "Amplitud positiva")
+	(%3APAL-STATEMENT "(defrange ?ondaT :FRAME Onda_T)\n\n; La onda T debe ser positiva\n(forall ?ondaT\n        (=> (own-slot-not-null Peak ?ondaT)\n            (> (Peak ?ondaT) 0)\n        )\n)\n\n; End > Start\n(forall ?ondaT\n        (=> (and (own-slot-not-null Start ?ondaT)\n                 (own-slot-not-null End ?ondaT))\n            (> (End ?ondaT) (Start ?ondaT))\n        )\n)\n\n"))
+
+([Ontodologia+ECG_Class18] of  ONDA_P
+
+	(End 1080)
+	(Peak 0.25)
+	(Start 1000))
+
+([Ontodologia+ECG_Class19] of  ONDA_Q
+
+	(End 1220)
+	(Peak -0.5)
+	(Start 1120))
+
+([Ontodologia+ECG_Class2] of  %3APAL-CONSTRAINT
+
+	(%3APAL-NAME "El final de una onda debe ser posterior a su inicio")
+	(%3APAL-STATEMENT "(defrange ?onda :FRAME ONDA)\n\n(forall ?onda\n        (=> (and (own-slot-not-null Start ?onda)\n                 (own-slot-not-null End ?onda))\n            (> (End ?onda) (Start ?onda))\n        )\n)\n\n"))
+
+([Ontodologia+ECG_Class20] of  ONDA_R
+
+	(End 1270)
+	(Peak 1.25)
+	(Start 1220))
+
+([Ontodologia+ECG_Class21] of  ONDA_S
+
+	(End 1370)
+	(Peak -0.75)
+	(Start 1270))
+
+([Ontodologia+ECG_Class22] of  ONDA_T
+
+	(End 1610)
+	(Peak 0.25)
+	(Start 1450))
+
+([Ontodologia+ECG_Class23] of  SEGMENTO_PR
+
+	(Amplitud 0.0)
+	(End 1270)
+	(Start 1000))
+
+([Ontodologia+ECG_Class24] of  SEGMENTO_ST
+
+	(Amplitud 0.0)
+	(End 1610)
+	(Start 1270))
+
+([Ontodologia+ECG_Class25] of  INTERVALO_PR
+
+	(Amplitud 0.0)
+	(End 1120)
+	(Start 1000))
+
+([Ontodologia+ECG_Class26] of  INTERVALO_QT
+
+	(Amplitud 0.0)
+	(End 1610)
+	(Start 1120))
+
+([Ontodologia+ECG_Class27] of  BRADICARDIA_SINUSAL
+
+	(Resultado BRADICARDIA_SINUSAL))
+
+([Ontodologia+ECG_Class28] of  CONTRACCI%C3%93N_VERTICULAR_PREMATURA
+
+	(Resultado CONTRACCI%C3%93N_VERTICULAR_PREMATURA))
+
+([Ontodologia+ECG_Class29] of  FLUTTER_AURICULAR
+
+	(Resultado FLUTTER_AURICULAR))
+
+([Ontodologia+ECG_Class30] of  TAQUICARDIA_SINUSAL
+
+	(Resultado TAQUICARDIA_SINUSAL))
+
+([Ontodologia+ECG_Class31] of  HIPOCALCEMIA
+
+	(Resultado HIPOCALCEMIA))
+
+([Ontodologia+ECG_Class32] of  HIPOTASEMIA
+
+	(Resultado HIPOTASEMIA))
+
+([Ontodologia+ECG_Class33] of  INFARTO_AGUDO_MIOCARDIO
+
+	(Resultado INFARTO_AGUDO_MIOCARDIO))
+
+([Ontodologia+ECG_Class34] of  ISQUEMIA_CORONARIA
+
+	(Resultado ISQUEMIA_CORONARIA))
+
+([Ontodologia+ECG_Class35] of  COMPLEJO_QRS
+
+	(Amplitud 0.0)
+	(End 1370)
+	(Start 1120))
+
+([Ontodologia+ECG_Class36] of  ANALISIS_SE%C3%91AL
+
+	(Ciclo 910.0)
+	(Ritmo_Cardiaco 66))
+
+([Ontodologia+ECG_Class6] of  %3APAL-CONSTRAINT
+
+	(%3APAL-NAME "El final de una onda debe ser posterior a su inicio")
+	(%3APAL-STATEMENT "(defrange ?onda :FRAME ONDA)\n(forall ?onda\n        (=> (and (own-slot-not-null Start ?onda)\n                 (own-slot-not-null End ?onda))\n            (> (End ?onda) (Start ?onda))\n        )\n)\n"))
+
+([Ontodologia+ECG_Class7] of  %3APAL-CONSTRAINT
+
+	(%3APAL-NAME "Final mayor que el inicio")
+	(%3APAL-STATEMENT "(defrange ?intervalo :FRAME INTERVALO)\n(defrange ?intervaloPQ :FRAME Intervalo_PQ)\n(defrange ?intervaloQT :FRAME Intervalo_QT)\n(defrange ?ondaP :FRAME Onda_P)\n(defrange ?ondaQ :FRAME Onda_Q)\n(defrange ?ondaT :FRAME Onda_T)\n\n; Fin > Inicio\n(forall ?intervalo\n        (=> (and (own-slot-not-null Inicio ?intervalo)\n                 (own-slot-not-null Fin ?intervalo))\n            (> (Fin ?intervalo) (Inicio ?intervalo))\n        )\n)\n\n; Duración >= 0\n(forall ?intervalo\n        (=> (own-slot-not-null Duración ?intervalo)\n            (>= (Duración ?intervalo) 0)\n        )\n)\n\n; Duración = Fin - Inicio\n(forall ?intervalo\n        (=> (and (own-slot-not-null Inicio ?intervalo)\n                 (own-slot-not-null Fin ?intervalo)\n                 (own-slot-not-null Duración ?intervalo))\n            (= (Duración ?intervalo) (- (Fin ?intervalo) (Inicio ?intervalo)))\n        )\n)\n"))
+
+([Ontodologia+ECG_Class9] of  %3APAL-CONSTRAINT
+
+	(%3APAL-NAME "Amplitud positiva")
+	(%3APAL-STATEMENT "(defrange ?ondaP :FRAME Onda_P)\n\n; La onda P debe ser positiva\n(forall ?ondaP\n        (=> (own-slot-not-null Peak ?ondaP)\n            (> (Peak ?ondaP) 0)\n        )\n)\n\n; End > Start\n(forall ?ondaP\n        (=> (and (own-slot-not-null Start ?ondaP)\n                 (own-slot-not-null End ?ondaP))\n            (> (End ?ondaP) (Start ?ondaP))\n        )\n)\n"))
