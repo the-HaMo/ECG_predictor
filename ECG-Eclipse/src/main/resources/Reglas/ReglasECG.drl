@@ -9,8 +9,6 @@ import Clases.*
 //declare any global variables here
 
 
-
-
 rule "Imprimir"
 
     when
@@ -20,11 +18,29 @@ rule "Imprimir"
 
 end
 
-rule "Your Second Rule"
-    //include attributes such as "salience" here...
-    when
-        //conditions
-    then
-        //actions
+rule "Ciclos cardíacos secuenciales (P-Q-R-S-T)"
+when
+    $p: Onda_P($startP: start) 
+	$q: Onda_Q($startQ: start) 
+        eval($startQ > $startP)
+    $r: Onda_R($startR: start) 
+        eval($startR > $startQ)
+	$s: Onda_S($startS: start) 
+        eval($startS > $startR)
+	$t: Onda_T($startT: start, $endT: fin) 
+        eval($startT > $startS)
+then
+    // Insertamos el ciclo cardíaco con duración
+    int duracion = $endT - $startP;  // Calcula primero la duración
+    insert(new Ciclo_Cardiaco(duracion));
+    System.out.println("Ciclo cardíaco detectado: " + $startP + "ms a " + $endT + "ms" + " Duración: " + duracion);
 
+    // Retiramos las ondas usadas para que la próxima P tome las siguientes Q-R-S-T
+    retract($p);
+    retract($q);
+    retract($r);
+    retract($s);
+    retract($t);
 end
+
+

@@ -3,13 +3,13 @@ package Clases;
 public abstract class Onda {
 
 	private int start;
-	private int end;
+	private int fin;
 	private double peak;
 	
 	
-	public Onda(int start, int end, double peak) {
+	public Onda(int start, int fin, double peak) {
 		this.start = start;
-		this.end = end;
+		this.fin = fin;
 		this.peak = peak;
 	}
 
@@ -24,13 +24,13 @@ public abstract class Onda {
 	}
 
 
-	public int getEnd() {
-		return end;
+	public int getFin() {
+		return fin;
 	}
 
 
-	public void setEnd(int end) {
-		this.end = end;
+	public void setEnd(int fin) {
+		this.fin = fin;
 	}
 
 
@@ -46,7 +46,7 @@ public abstract class Onda {
 
 	@Override
 	public String toString() {
-		return getClass().getSimpleName() + " [start=" + start + ", end=" + end + ", peak=" + peak + "]";
+		return getClass().getSimpleName() + " [start=" + start + ", end=" + fin + ", peak=" + peak + "]";
 	}
 	
 	
