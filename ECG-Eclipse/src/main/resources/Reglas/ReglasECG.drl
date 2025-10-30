@@ -11,12 +11,12 @@ import Clases.*
 
 
 
-rule "Your First Rule"
+rule "Imprimir"
 
     when
-        //conditions
+        $o: Onda() 
     then
-        //actions
+        System.out.println($o);
 
 end
 

@@ -42,6 +42,12 @@ public abstract class Onda {
 	public void setPeak(double peak) {
 		this.peak = peak;
 	}
+
+
+	@Override
+	public String toString() {
+		return getClass().getSimpleName() + " [start=" + start + ", end=" + end + ", peak=" + peak + "]";
+	}
 	
 	
 	
