@@ -1,6 +1,7 @@
 //created on: 23 oct 2025
 package Reglas
 import Clases.*
+import java.util.ArrayList
 
 //list any import classes here.
 
@@ -10,37 +11,91 @@ import Clases.*
 
 
 rule "Imprimir"
-
     when
         $o: Onda() 
     then
         System.out.println($o);
+end 
 
-end
 
-rule "Ciclos cardíacos secuenciales (P-Q-R-S-T)"
+// Detección de ciclos con T
+rule "Ciclos cardíacos secuenciales (Q-R-S-[T opcional])"
 when
-    $p: Onda_P($startP: start) 
-	$q: Onda_Q($startQ: start) 
+    // Solo ondas no usadas
+    $p: Onda_P(usada == false, $startP: start)
+    $q: Onda_Q(usada == false, $startQ: start)
         eval($startQ > $startP)
-    $r: Onda_R($startR: start) 
+    $r: Onda_R(usada == false, $startR: start)
         eval($startR > $startQ)
-	$s: Onda_S($startS: start) 
+    $s: Onda_S(usada == false, $startS: start, $endS: fin)
         eval($startS > $startR)
-	$t: Onda_T($startT: start, $endT: fin) 
+    $t: Onda_T(usada == false, $startT: start, $endT: fin)
         eval($startT > $startS)
 then
-    // Insertamos el ciclo cardíaco con duración
-    int duracion = $endT - $startP;  // Calcula primero la duración
-    insert(new Ciclo_Cardiaco(duracion));
-    System.out.println("Ciclo cardíaco detectado: " + $startP + "ms a " + $endT + "ms" + " Duración: " + duracion);
+    int finCiclo = $endT;
+    int duracion = finCiclo - $startQ;
 
-    // Retiramos las ondas usadas para que la próxima P tome las siguientes Q-R-S-T
-    retract($p);
-    retract($q);
-    retract($r);
-    retract($s);
-    retract($t);
+    insert(new Ciclo_Cardiaco(duracion));
+
+    System.out.println("Ciclo cardíaco detectado: " + $startQ + "ms a " + finCiclo + "ms"
+        + " Duración: " + duracion + " (con T)");
+
+    // Marcamos las ondas como usadas (sin eliminarlas)
+    modify($p) { setUsada(); }
+    modify($q) { setUsada(); }
+    modify($r) { setUsada(); }
+    modify($s) { setUsada(); }
+    modify($t) { setUsada(); }
 end
 
 
+// Detección de ciclos sin T
+rule "Ciclos cardíacos hasta la S (sin T)"
+when
+    $p: Onda_P(usada == false, $startP: start)
+    $q: Onda_Q(usada == false, $startQ: start)
+        eval($startQ > $startP)
+    $r: Onda_R(usada == false, $startR: start)
+        eval($startR > $startQ)
+    $s: Onda_S(usada == false, $startS: start, $endS: fin)
+        eval($startS > $startR)
+    not( Onda_T(usada == false, start > $startS) )
+then
+    int finCiclo = $endS;
+    int duracion = finCiclo - $startQ;
+
+    insert(new Ciclo_Cardiaco(duracion));
+
+    System.out.println("Ciclo cardíaco detectado: " + $startQ + "ms a " + finCiclo + "ms"
+        + " Duración: " + duracion + " (sin T)");
+
+    // Marcamos las ondas como usadas
+    modify($p) { setUsada(); }
+    modify($q) { setUsada(); }
+    modify($r) { setUsada(); }
+    modify($s) { setUsada(); }
+end
+
+// Cálculo de número de ciclos y ritmo cardíaco
+rule "Numero de ciclos y ritmo cardiaco"
+when
+    $listaCiclos : java.util.List() from collect( Ciclo_Cardiaco() )
+    $listaQ : java.util.List() from collect( Onda_Q() )
+    eval( !$listaCiclos.isEmpty() )
+    eval( !$listaQ.isEmpty() )
+then
+    int numCiclos = $listaCiclos.size();
+ 
+    // Tomamos la primera(ultima insertada) y última (primera insertada) Q
+    Onda_Q ultimaQ = (Onda_Q) $listaQ.get(0);
+    Onda_Q primeraQ  = (Onda_Q) $listaQ.get($listaQ.size() - 1);
+
+    int duracionTotal = ultimaQ.getStart() - primeraQ.getStart();
+
+    // Fórmula exacta según la práctica
+    int ritmo_cardiaco = (60000 * numCiclos) / duracionTotal;
+    insert(new Analisis_Señal(numCiclos, ritmo_cardiaco));
+
+    System.out.println("Num_cycles : " + numCiclos);
+    System.out.println("Heart_Rate : " + ritmo_cardiaco + " pul/min");
+end

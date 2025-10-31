@@ -19,6 +19,13 @@ public class Ciclo_Cardiaco {
 	public void setTciclo(int tciclo) {
 		this.tciclo = tciclo;
 	}
+
+
+	@Override
+	public String toString() {
+		return "Ciclo_Cardiaco [tciclo=" + tciclo + "]";
+	}
+	
 	
 	
 }
