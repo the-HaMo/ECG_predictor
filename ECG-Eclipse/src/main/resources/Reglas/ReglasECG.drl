@@ -99,3 +99,82 @@ then
     System.out.println("Num_cycles : " + numCiclos);
     System.out.println("Heart_Rate : " + ritmo_cardiaco + " pul/min");
 end
+
+rule "Creacion Complejo QRS"
+    when
+        $q: Onda_Q(usada == true, $startQ: start, $peakQ: peak)
+        $r: Onda_R(usada == true, $startR: start, start > $q.fin, $peakR: peak)
+        $s: Onda_S(usada == true, $startS: start, $endS: fin, start > $r.fin, $peakS: peak)
+  
+        // Asegurarse de que pertenecen al mismo ciclo y QRS no debe durar más de 200ms
+        eval($startR - $startQ < 200)  
+        // No existe ya un complejo con estas ondas
+        not(Complejo_QRS(ondaQ == $q, ondaR == $r, ondaS == $s))
+    then
+        int duracion = $endS - $startQ;
+        double amplitudTotal = $peakR - Math.min($peakQ, $peakS);
+        Complejo_QRS qrs = new Complejo_QRS($q, $r, $s, duracion);
+        insert(qrs);
+        System.out.println("Complejo QRS: inicio=" + $startQ + ", fin=" + $endS + ", duración=" + duracion + "ms");
+end
+
+rule "Creacion Intervalo PR"
+    when
+        $p: Onda_P(usada == true, $startP: start)
+        $q: Onda_Q(usada == true, $startQ: start, start > $p.fin)
+        
+        // Q debe estar cerca de P (mismo ciclo) e intervalo PR tipico es < 400ms
+        eval($startQ - $startP < 400) 
+        not(Intervalo_PR(inicio == $startP, fin == $startQ))
+    then
+        int duracion = $startQ - $startP;
+        Intervalo_PR intervaloPR = new Intervalo_PR($startP, $startQ, duracion);
+        insert(intervaloPR);
+        System.out.println("Intervalo PR: " + $startP + " -> " + $startQ + " | Duración: " + duracion + "ms");
+end
+
+rule "Crear Intervalo QT"
+    when
+        $q: Onda_Q(usada == true, $startQ: start)
+        $t: Onda_T(usada == true, $startT: start, $endT: fin, start > $q.fin)
+        
+        // T debe estar cerca de Q (mismo ciclo) e Intervalo QT típico < 600ms
+        eval($endT - $startQ < 600)  
+        not(Intervalo_QT(inicio == $startQ, fin == $endT))
+    then
+        int duracion = $endT - $startQ;
+        Intervalo_QT intervaloQT = new Intervalo_QT($startQ, $endT, duracion);
+        insert(intervaloQT);
+        System.out.println("Intervalo QT: " + $startQ + " -> " + $endT + " | Duración: " + duracion + "ms");
+end
+
+rule "Crear Segmento PR"
+    when
+        $p: Onda_P(usada == true, $endP: fin)
+        $q: Onda_Q(usada == true, $startQ: start, start > $endP)
+        
+        // Verificar que están en el mismo ciclo
+        eval($startQ - $endP < 200)
+        not(Segmento_PR(inicio == $endP, fin == $startQ))
+    then
+        int duracion = $startQ - $endP;
+        Segmento_PR segmentoPR = new Segmento_PR($endP, $startQ, 0.0, duracion);
+        insert(segmentoPR);
+        System.out.println("Segmento PR: " + $endP + " -> " + $startQ + " | Duración: " + duracion + "ms");
+end
+
+rule "Crear Segmento ST"
+    when
+        $s: Onda_S(usada == true, $endS: fin)
+        $t: Onda_T(usada == true, $startT: start, start > $endS)
+        
+        // Verificar que están en el mismo ciclo
+        eval($startT - $endS < 300)
+        not(Segmento_ST(inicio == $endS, fin == $startT))
+    then
+        int duracion = $startT - $endS;
+        Segmento_ST segmentoST = new Segmento_ST($endS, $startT, 0.0, duracion);
+        insert(segmentoST);
+        System.out.println("Segmento ST: " + $endS + " -> " + $startT +"| Duración: " + duracion + "ms");
+end
+
