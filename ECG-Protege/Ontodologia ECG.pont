@@ -1,4 +1,4 @@
-; Thu Oct 23 12:47:59 CEST 2025
+; Thu Nov 06 12:19:44 GMT+01:00 2025
 ; 
 ;+ (version "3.4.8")
 ;+ (build "Build 629")
@@ -7,50 +7,50 @@
 (defclass %3ACLIPS_TOP_LEVEL_SLOT_CLASS "Fake class to save top-level slot information"
 	(is-a USER)
 	(role abstract)
-	(single-slot Resultado
-;+		(comment "Resultado obtenido a partir del análisis del ECG.")
-		(type SYMBOL)
-;+		(allowed-parents ANORMALIDAD_COMPLEJA ANORMALIDAD_SIMPLE)
-;+		(cardinality 1 1)
-		(create-accessor read-write))
-	(single-slot Peak
-;+		(comment "Pico máximo de la onda.")
-		(type FLOAT)
-;+		(cardinality 1 1)
-		(create-accessor read-write))
-	(single-slot Amplitud
-;+		(comment "Amplitud de la onda")
-		(type FLOAT)
-;+		(cardinality 1 1)
-		(create-accessor read-write))
-	(single-slot Duracion_total
-;+		(comment "Tiempo total de toda la señal del electrocardiograma")
-		(type FLOAT)
-;+		(cardinality 1 1)
-		(create-accessor read-write))
-	(single-slot End
+	(single-slot end
 ;+		(comment "Instante de finalización de la onda.")
 		(type INTEGER)
 ;+		(cardinality 1 1)
 		(create-accessor read-write))
-	(single-slot Ciclo
-;+		(comment "Número de bloques P-T")
-		(type FLOAT)
-;+		(cardinality 1 1)
-		(create-accessor read-write))
-	(single-slot Start
+	(single-slot start
 ;+		(comment "Instante del comienzo de la onda.")
 		(type INTEGER)
 ;+		(cardinality 1 1)
 		(create-accessor read-write))
-	(single-slot Tiempo_de_ciclo
+	(single-slot ciclo
+;+		(comment "Número de bloques P-T")
+		(type FLOAT)
+;+		(cardinality 1 1)
+		(create-accessor read-write))
+	(single-slot duracionTotal
+;+		(comment "Tiempo total de toda la señal del electrocardiograma")
+		(type FLOAT)
+;+		(cardinality 1 1)
+		(create-accessor read-write))
+	(single-slot resultado
+;+		(comment "Resultado obtenido a partir del análisis del ECG.")
+		(type SYMBOL)
+;+		(allowed-parents AnormalidadCompleja AnormalidadSimple Sano)
+;+		(cardinality 1 1)
+		(create-accessor read-write))
+	(single-slot amplitud
+;+		(comment "Amplitud de la onda")
+		(type FLOAT)
+;+		(cardinality 1 1)
+		(create-accessor read-write))
+	(single-slot tiempoDeCiclo
 ;+		(comment "Duración total de un ciclo cardíaco.")
 		(type FLOAT)
 ;+		(cardinality 1 1)
 		(create-accessor read-write))
-	(single-slot Ritmo_Cardiaco
+	(single-slot ritmoCardiaco
 ;+		(comment "Es el numero de pulsaciones por minuto del corazón.")
 		(type INTEGER)
+;+		(cardinality 1 1)
+		(create-accessor read-write))
+	(single-slot peak
+;+		(comment "Pico máximo de la onda.")
+		(type FLOAT)
 ;+		(cardinality 1 1)
 		(create-accessor read-write)))
 
@@ -58,182 +58,186 @@
 	(is-a USER)
 	(role abstract))
 
-(defclass ONDA "Representación de cualquier componente ondulatoria de la señal."
+(defclass Segmento "La unión de una onda con el complejo_qrs"
 	(is-a COMPONENTE_SE%C3%91AL_ECG)
 	(role abstract)
-	(single-slot End
+	(single-slot end
 ;+		(comment "Instante de finalización de la onda.")
 		(type INTEGER)
 ;+		(cardinality 1 1)
 		(create-accessor read-write))
-	(single-slot Start
+	(single-slot start
 ;+		(comment "Instante del comienzo de la onda.")
 		(type INTEGER)
 ;+		(cardinality 1 1)
 		(create-accessor read-write))
-	(single-slot Peak
-;+		(comment "Pico máximo de la onda.")
-		(type FLOAT)
-;+		(cardinality 1 1)
-		(create-accessor read-write)))
-
-(defclass ONDA_P
-	(is-a ONDA)
-	(role concrete))
-
-(defclass ONDA_Q
-	(is-a ONDA)
-	(role concrete))
-
-(defclass ONDA_R
-	(is-a ONDA)
-	(role concrete))
-
-(defclass ONDA_S
-	(is-a ONDA)
-	(role concrete))
-
-(defclass ONDA_T
-	(is-a ONDA)
-	(role concrete))
-
-(defclass SEGMENTO "La unión de una onda con el complejo_qrs"
-	(is-a COMPONENTE_SE%C3%91AL_ECG)
-	(role abstract)
-	(single-slot End
-;+		(comment "Instante de finalización de la onda.")
-		(type INTEGER)
-;+		(cardinality 1 1)
-		(create-accessor read-write))
-	(single-slot Amplitud
+	(single-slot amplitud
 ;+		(comment "Amplitud de la onda")
 		(type FLOAT)
 ;+		(cardinality 1 1)
-		(create-accessor read-write))
-	(single-slot Start
-;+		(comment "Instante del comienzo de la onda.")
-		(type INTEGER)
-;+		(cardinality 1 1)
 		(create-accessor read-write)))
 
-(defclass SEGMENTO_PR "El segmento PR conecta la onda P y el complej_QRS"
-	(is-a SEGMENTO)
+(defclass SegmentoPR "El segmento PR conecta la onda P y el complej_QRS"
+	(is-a Segmento)
 	(role concrete))
 
-(defclass SEGMENTO_ST "El segmento ST conecta el complejo QRS con T"
-	(is-a SEGMENTO)
+(defclass SegmentoST "El segmento ST conecta el complejo QRS con T"
+	(is-a Segmento)
 	(role concrete))
 
-(defclass INTERVALO "Representa un segmento temporal entre dos puntos característicos del ECG con el complejo QRS."
+(defclass Intervalo "Representa un segmento temporal entre dos puntos característicos del ECG con el complejo QRS."
 	(is-a COMPONENTE_SE%C3%91AL_ECG)
 	(role abstract)
-	(single-slot End
+	(single-slot end
 ;+		(comment "Instante de finalización de la onda.")
 		(type INTEGER)
 ;+		(cardinality 1 1)
 		(create-accessor read-write))
-	(single-slot Amplitud
-;+		(comment "Amplitud de la onda")
-		(type FLOAT)
-;+		(cardinality 1 1)
-		(create-accessor read-write))
-	(single-slot Start
+	(single-slot start
 ;+		(comment "Instante del comienzo de la onda.")
 		(type INTEGER)
 ;+		(cardinality 1 1)
+		(create-accessor read-write))
+	(single-slot amplitud
+;+		(comment "Amplitud de la onda")
+		(type FLOAT)
+;+		(cardinality 1 1)
 		(create-accessor read-write)))
 
-(defclass INTERVALO_PR
-	(is-a INTERVALO)
+(defclass IntervaloPR
+	(is-a Intervalo)
 	(role concrete))
 
-(defclass INTERVALO_QT
-	(is-a INTERVALO)
+(defclass IntervaloQT
+	(is-a Intervalo)
 	(role concrete))
 
-(defclass COMPLEJO_QRS "Representa agrupaciones de ondas. En esta versión se incluye el Complejos, formado por las ondas Q, R y S, que representa la despolarización ventricular"
+(defclass AnalisisSe%C3%B1al "Clase que calcula todos los atributos derivados a partir de la señal ECG (Inferidos por el Motor de Inferencia)"
 	(is-a COMPONENTE_SE%C3%91AL_ECG)
 	(role concrete)
-	(single-slot End
-;+		(comment "Instante de finalización de la onda.")
-		(type INTEGER)
-;+		(cardinality 1 1)
-		(create-accessor read-write))
-	(single-slot Amplitud
-;+		(comment "Amplitud de la onda")
-		(type FLOAT)
-;+		(cardinality 1 1)
-		(create-accessor read-write))
-	(single-slot Start
-;+		(comment "Instante del comienzo de la onda.")
-		(type INTEGER)
-;+		(cardinality 1 1)
-		(create-accessor read-write)))
-
-(defclass ANALISIS_SE%C3%91AL "Clase que calcula todos los atributos derivados a partir de la señal ECG (Inferidos por el Motor de Inferencia)"
-	(is-a COMPONENTE_SE%C3%91AL_ECG)
-	(role concrete)
-	(single-slot Ritmo_Cardiaco
+	(single-slot ritmoCardiaco
 ;+		(comment "Es el numero de pulsaciones por minuto del corazón.")
 		(type INTEGER)
 ;+		(cardinality 1 1)
 		(create-accessor read-write))
-	(single-slot Ciclo
+	(single-slot ciclo
 ;+		(comment "Número de bloques P-T")
 		(type FLOAT)
 ;+		(cardinality 1 1)
 		(create-accessor read-write)))
 
-(defclass DIAGNOSTICO_INFERIDO "Resultado obtenido a partir del análisis ECG."
+(defclass DiagnosticoInferido "Resultado obtenido a partir del análisis ECG."
 	(is-a COMPONENTE_SE%C3%91AL_ECG)
 	(role abstract)
-	(single-slot Resultado
+	(single-slot resultado
 ;+		(comment "Resultado obtenido a partir del análisis del ECG.")
 		(type SYMBOL)
-;+		(allowed-parents ANORMALIDAD_COMPLEJA ANORMALIDAD_SIMPLE)
+;+		(allowed-parents AnormalidadCompleja AnormalidadSimple Sano)
 ;+		(cardinality 1 1)
 		(create-accessor read-write)))
 
-(defclass ANORMALIDAD_SIMPLE
-	(is-a DIAGNOSTICO_INFERIDO)
+(defclass AnormalidadSimple
+	(is-a DiagnosticoInferido)
 	(role abstract))
 
-(defclass HIPOTASEMIA
-	(is-a ANORMALIDAD_SIMPLE)
+(defclass Hipotasemia
+	(is-a AnormalidadSimple)
 	(role concrete))
 
-(defclass HIPOCALCEMIA
-	(is-a ANORMALIDAD_SIMPLE)
+(defclass Hipocalcemia
+	(is-a AnormalidadSimple)
 	(role concrete))
 
-(defclass INFARTO_AGUDO_MIOCARDIO
-	(is-a ANORMALIDAD_SIMPLE)
+(defclass InfartoAgudoMiocardio
+	(is-a AnormalidadSimple)
 	(role concrete))
 
-(defclass ISQUEMIA_CORONARIA
-	(is-a ANORMALIDAD_SIMPLE)
+(defclass IsquemiaCoronaria
+	(is-a AnormalidadSimple)
 	(role concrete))
 
-(defclass ANORMALIDAD_COMPLEJA
-	(is-a DIAGNOSTICO_INFERIDO)
+(defclass AnormalidadCompleja
+	(is-a DiagnosticoInferido)
 	(role abstract))
 
-(defclass BRADICARDIA_SINUSAL
-	(is-a ANORMALIDAD_COMPLEJA)
+(defclass BradicardiaSinusal
+	(is-a AnormalidadCompleja)
 	(role concrete))
 
-(defclass TAQUICARDIA_SINUSAL
-	(is-a ANORMALIDAD_COMPLEJA)
+(defclass TaquicardiaSinusal
+	(is-a AnormalidadCompleja)
 	(role concrete))
 
-(defclass FLUTTER_AURICULAR
-	(is-a ANORMALIDAD_COMPLEJA)
+(defclass FlutterAuricular
+	(is-a AnormalidadCompleja)
 	(role concrete))
 
-(defclass CONTRACCI%C3%93N_VERTICULAR_PREMATURA
-	(is-a ANORMALIDAD_COMPLEJA)
+(defclass Contracci%C3%B3nVerticularPrematura
+	(is-a AnormalidadCompleja)
 	(role concrete))
 
-(defclass SANO "El paciente no tiene ninguna anormalidad"
-	(is-a DIAGNOSTICO_INFERIDO)
+(defclass Sano "El paciente no tiene ninguna anormalidad"
+	(is-a DiagnosticoInferido)
 	(role concrete))
+
+(defclass Onda "Representación de cualquier componente ondulatoria de la señal."
+	(is-a COMPONENTE_SE%C3%91AL_ECG)
+	(role abstract)
+	(single-slot end
+;+		(comment "Instante de finalización de la onda.")
+		(type INTEGER)
+;+		(cardinality 1 1)
+		(create-accessor read-write))
+	(single-slot start
+;+		(comment "Instante del comienzo de la onda.")
+		(type INTEGER)
+;+		(cardinality 1 1)
+		(create-accessor read-write))
+	(single-slot peak
+;+		(comment "Pico máximo de la onda.")
+		(type FLOAT)
+;+		(cardinality 1 1)
+		(create-accessor read-write)))
+
+(defclass OndaP
+	(is-a Onda)
+	(role concrete))
+
+(defclass OndaQ
+	(is-a Onda)
+	(role concrete))
+
+(defclass OndaR
+	(is-a Onda)
+	(role concrete))
+
+(defclass OndaS
+	(is-a Onda)
+	(role concrete))
+
+(defclass OndaT
+	(is-a Onda)
+	(role concrete))
+
+(defclass Complejo
+	(is-a COMPONENTE_SE%C3%91AL_ECG)
+	(role abstract))
+
+(defclass ComplejoQRS "Representa agrupaciones de ondas. En esta versión se incluye el Complejos, formado por las ondas Q, R y S, que representa la despolarización ventricular"
+	(is-a Complejo)
+	(role concrete)
+	(single-slot end
+;+		(comment "Instante de finalización de la onda.")
+		(type INTEGER)
+;+		(cardinality 1 1)
+		(create-accessor read-write))
+	(single-slot start
+;+		(comment "Instante del comienzo de la onda.")
+		(type INTEGER)
+;+		(cardinality 1 1)
+		(create-accessor read-write))
+	(single-slot amplitud
+;+		(comment "Amplitud de la onda")
+		(type FLOAT)
+;+		(cardinality 1 1)
+		(create-accessor read-write)))
