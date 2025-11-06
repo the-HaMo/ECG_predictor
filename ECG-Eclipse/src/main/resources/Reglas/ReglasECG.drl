@@ -20,76 +20,67 @@ end
 
 rule "Detectar Ciclo cardíaco con T"
 when
-    // Ondas secuenciales no usadas
-    $p: Onda_P(usada == false, $startP: start)
-
-    $q: Onda_Q(usada == false, $startQ: start)
-        eval($startQ > $startP)
-        not Onda_Q(usada == false, start > $startP && start < $startQ)
-
-    $r: Onda_R(usada == false, $startR: start)
-        eval($startR > $startQ)
-        not Onda_R(usada == false, start > $startQ && start < $startR)
-
-    $s: Onda_S(usada == false, $startS: start, $endS: fin)
-        eval($startS > $startR)
-        not Onda_S(usada == false, start > $startR && start < $startS)
-
-    // Existe una T inmediatamente después de la S
-    $t: Onda_T(usada == false, $startT: start, $endT: fin)
-        eval($startT > $startS)
-        not Onda_T(usada == false, start > $startS && start < $startT)
-then
-    int finCiclo = $endT;
-    int duracion = finCiclo - $startQ;
-
-    insert(new Ciclo_Cardiaco(duracion));
-
-    System.out.println("Ciclo cardíaco detectado (con T): desde " +
-        $startQ + "ms hasta " + finCiclo + "ms. Duración: " + duracion);
-
-    // Marcar ondas como usadas
-    modify($p) { setUsada(); }
-    modify($q) { setUsada(); }
-    modify($r) { setUsada(); }
-    modify($s) { setUsada(); }
-    modify($t) { setUsada(); }
-end
-
-
-rule "Detectar Ciclo cardíaco sin T"
-when
-    // Ondas secuenciales no usadas
+    // Ondas secuenciales en orden temporal
     $p: Onda_P($startP: start)
 
     $q: Onda_Q($startQ: start)
         eval($startQ > $startP)
         not Onda_Q(start > $startP && start < $startQ)
 
-    $r: Onda_R(usada == false, $startR: start)
+    $r: Onda_R($startR: start)
         eval($startR > $startQ)
-        not Onda_R(usada == false, start > $startQ && start < $startR)
+        not Onda_R(start > $startQ && start < $startR)
 
-    $s: Onda_S(usada == false, $startS: start, $endS: fin)
+    $s: Onda_S($startS: start, $endS: fin)
         eval($startS > $startR)
-        not Onda_S(usada == false, start > $startR && start < $startS)
+        not Onda_S(start > $startR && start < $startS)
 
-    // No hay T después de S
-    not Onda_T(usada == false, start > $startS)
+    // T inmediatamente posterior a S (la primera después de S)
+    $t: Onda_T($startT: start, $endT: fin)
+        eval($startT > $startS)
+        not Onda_T(start > $startS && start < $startT)
+then
+    int finCiclo = $endT;
+    int duracion = finCiclo - $startQ;
+
+    insert(new Ciclo_Cardiaco(duracion));
+
+    System.out.println(
+        "Ciclo cardíaco detectado (con T): desde " + 
+        $startQ + "ms hasta " + finCiclo + 
+        "ms. Duración: " + duracion
+    );
+end
+
+rule "Detectar Ciclo cardíaco sin T"
+when
+    $p: Onda_P($startP: start)
+
+    $q: Onda_Q($startQ: start)
+        eval($startQ > $startP)
+        not Onda_Q(start > $startP && start < $startQ)
+
+    $r: Onda_R($startR: start)
+        eval($startR > $startQ)
+        not Onda_R(start > $startQ && start < $startR)
+
+    $s: Onda_S($startS: start, $endS: fin)
+        eval($startS > $startR)
+        not Onda_S(start > $startR && start < $startS)
+
+    // No existe una onda T posterior a S
+    not Onda_T(start > $startS)
 then
     int finCiclo = $endS;
     int duracion = finCiclo - $startQ;
 
     insert(new Ciclo_Cardiaco(duracion));
 
-    System.out.println("Ciclo cardíaco detectado (sin T): desde " +
-        $startQ + "ms hasta " + finCiclo + "ms. Duración: " + duracion);
-
-    // Marcar ondas como usadas
-    modify($p) { setUsada(); }
-    modify($q) { setUsada(); }
-    modify($r) { setUsada(); }
-    modify($s) { setUsada(); }
+    System.out.println(
+        "Ciclo cardíaco detectado (sin T): desde " + 
+        $startQ + "ms hasta " + finCiclo + 
+        "ms. Duración: " + duracion
+    );
 end
 
 
@@ -119,7 +110,7 @@ end
 
 rule "Creacion Complejo_QRS"
 when
-    // Ondas en orden secuencial natural (sin usada)
+    // Ondas en orden correcto (sin usada)
     $q: Onda_Q($startQ: start, $endQ: fin, $peakQ: peak)
     
     $r: Onda_R($startR: start, $endR: fin, $peakR: peak)
@@ -144,7 +135,6 @@ then
         "ms, amplitud=" + amplitudTotal
     );
 end
-
 
 /*
 rule "Creacion Intervalo PR"
