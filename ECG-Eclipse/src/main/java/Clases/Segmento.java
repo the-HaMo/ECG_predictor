@@ -5,12 +5,14 @@ public abstract class Segmento {
 	private int inicio;
 	private int fin;
 	private int duracion;
+	private double amplitud;
 	
 	
-	public Segmento(int inicio, int fin, int duracion) {
+	public Segmento(int inicio, int fin, double ampl,int duracion) {
 		super();
 		this.inicio = inicio;
 		this.fin = fin;
+		this.amplitud=ampl;
 		this.duracion = duracion;
 	}
 
@@ -18,7 +20,10 @@ public abstract class Segmento {
 	public int getInicio() {
 		return inicio;
 	}
-
+	
+	public double getAmplitud() {
+		return amplitud;
+	}
 
 	public void setInicio(int inicio) {
 		this.inicio = inicio;

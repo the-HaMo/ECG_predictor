@@ -100,24 +100,32 @@ then
     System.out.println("Heart_Rate : " + ritmo_cardiaco + " pul/min");
 end
 
-rule "Creacion Complejo QRS"
-    when
-        $q: Onda_Q(usada == true, $startQ: start, $peakQ: peak)
-        $r: Onda_R(usada == true, $startR: start, start > $q.fin, $peakR: peak)
-        $s: Onda_S(usada == true, $startS: start, $endS: fin, start > $r.fin, $peakS: peak)
-  
-        // Asegurarse de que pertenecen al mismo ciclo y QRS no debe durar más de 200ms
-        eval($startR - $startQ < 200)  
-        // No existe ya un complejo con estas ondas
-        not(Complejo_QRS(ondaQ == $q, ondaR == $r, ondaS == $s))
-    then
-        int duracion = $endS - $startQ;
-        double amplitudTotal = $peakR - Math.min($peakQ, $peakS);
-        Complejo_QRS qrs = new Complejo_QRS($q, $r, $s, duracion);
-        insert(qrs);
-        System.out.println("Complejo QRS: inicio=" + $startQ + ", fin=" + $endS + ", duración=" + duracion + "ms");
+rule "Creacion Complejo_QRS"
+when
+    // Ondas libres y en orden secuencial
+    $q: Onda_Q(usada == false, $startQ: start, $endQ: fin, $peakQ: peak)
+    $r: Onda_R(usada == false, $startR: start, $endR: fin, $peakR: peak, $startR > $endQ)
+    $s: Onda_S(usada == false, $startS: start, $endS: fin, $peakS: peak, $startS > $endR)
+
+    eval(($endS - $startQ) >= 80 && ($endS - $startQ) <= 200)
+then
+    int duracion = $endS - $startQ;
+    double amplitudTotal = $peakR - Math.min($peakQ, $peakS);
+
+    Complejo_QRS qrs = new Complejo_QRS($q, $r, $s, duracion);
+    insert(qrs);
+
+    // Marcar ondas como usadas (para que no se reusen)
+    modify($q) { setUsada(); }
+    modify($r) { setUsada(); }
+    modify($s) { setUsada(); }
+
+    System.out.println("Complejo QRS detectado: inicio=" + $startQ + "ms, fin=" + $endS +
+                       "ms, duración=" + duracion + "ms, amplitud=" + amplitudTotal);
 end
 
+
+/*
 rule "Creacion Intervalo PR"
     when
         $p: Onda_P(usada == true, $startP: start)
@@ -147,7 +155,7 @@ rule "Crear Intervalo QT"
         insert(intervaloQT);
         System.out.println("Intervalo QT: " + $startQ + " -> " + $endT + " | Duración: " + duracion + "ms");
 end
-
+*/
 rule "Crear Segmento PR"
     when
         $p: Onda_P(usada == true, $endP: fin)
