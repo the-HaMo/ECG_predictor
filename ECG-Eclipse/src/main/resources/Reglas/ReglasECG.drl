@@ -9,38 +9,46 @@ import java.util.ArrayList
 
 //declare any global variables here
 
-
+/*
 rule "Imprimir"
     when
         $o: Onda() 
     then
         System.out.println($o);
-end 
+end
+*/ 
 
-
-// Detección de ciclos con T
-rule "Ciclos cardíacos secuenciales (Q-R-S-[T opcional])"
+rule "Detectar Ciclo cardíaco con T"
 when
-    // Solo ondas no usadas
+    // Ondas secuenciales no usadas
     $p: Onda_P(usada == false, $startP: start)
+
     $q: Onda_Q(usada == false, $startQ: start)
         eval($startQ > $startP)
+        not Onda_Q(usada == false, start > $startP && start < $startQ)
+
     $r: Onda_R(usada == false, $startR: start)
         eval($startR > $startQ)
+        not Onda_R(usada == false, start > $startQ && start < $startR)
+
     $s: Onda_S(usada == false, $startS: start, $endS: fin)
         eval($startS > $startR)
+        not Onda_S(usada == false, start > $startR && start < $startS)
+
+    // Existe una T inmediatamente después de la S
     $t: Onda_T(usada == false, $startT: start, $endT: fin)
         eval($startT > $startS)
+        not Onda_T(usada == false, start > $startS && start < $startT)
 then
     int finCiclo = $endT;
     int duracion = finCiclo - $startQ;
 
     insert(new Ciclo_Cardiaco(duracion));
 
-    System.out.println("Ciclo cardíaco detectado: " + $startQ + "ms a " + finCiclo + "ms"
-        + " Duración: " + duracion + " (con T)");
+    System.out.println("Ciclo cardíaco detectado (con T): desde " +
+        $startQ + "ms hasta " + finCiclo + "ms. Duración: " + duracion);
 
-    // Marcamos las ondas como usadas (sin eliminarlas)
+    // Marcar ondas como usadas
     modify($p) { setUsada(); }
     modify($q) { setUsada(); }
     modify($r) { setUsada(); }
@@ -49,32 +57,41 @@ then
 end
 
 
-// Detección de ciclos sin T
-rule "Ciclos cardíacos hasta la S (sin T)"
+rule "Detectar Ciclo cardíaco sin T"
 when
-    $p: Onda_P(usada == false, $startP: start)
-    $q: Onda_Q(usada == false, $startQ: start)
+    // Ondas secuenciales no usadas
+    $p: Onda_P($startP: start)
+
+    $q: Onda_Q($startQ: start)
         eval($startQ > $startP)
+        not Onda_Q(start > $startP && start < $startQ)
+
     $r: Onda_R(usada == false, $startR: start)
         eval($startR > $startQ)
+        not Onda_R(usada == false, start > $startQ && start < $startR)
+
     $s: Onda_S(usada == false, $startS: start, $endS: fin)
         eval($startS > $startR)
-    not( Onda_T(usada == false, start > $startS) )
+        not Onda_S(usada == false, start > $startR && start < $startS)
+
+    // No hay T después de S
+    not Onda_T(usada == false, start > $startS)
 then
     int finCiclo = $endS;
     int duracion = finCiclo - $startQ;
 
     insert(new Ciclo_Cardiaco(duracion));
 
-    System.out.println("Ciclo cardíaco detectado: " + $startQ + "ms a " + finCiclo + "ms"
-        + " Duración: " + duracion + " (sin T)");
+    System.out.println("Ciclo cardíaco detectado (sin T): desde " +
+        $startQ + "ms hasta " + finCiclo + "ms. Duración: " + duracion);
 
-    // Marcamos las ondas como usadas
+    // Marcar ondas como usadas
     modify($p) { setUsada(); }
     modify($q) { setUsada(); }
     modify($r) { setUsada(); }
     modify($s) { setUsada(); }
 end
+
 
 // Cálculo de número de ciclos y ritmo cardíaco
 rule "Numero de ciclos y ritmo cardiaco"
@@ -102,26 +119,30 @@ end
 
 rule "Creacion Complejo_QRS"
 when
-    // Ondas libres y en orden secuencial
-    $q: Onda_Q(usada == false, $startQ: start, $endQ: fin, $peakQ: peak)
-    $r: Onda_R(usada == false, $startR: start, $endR: fin, $peakR: peak, $startR > $endQ)
-    $s: Onda_S(usada == false, $startS: start, $endS: fin, $peakS: peak, $startS > $endR)
-
-    eval(($endS - $startQ) >= 80 && ($endS - $startQ) <= 200)
+    // Ondas en orden secuencial natural (sin usada)
+    $q: Onda_Q($startQ: start, $endQ: fin, $peakQ: peak)
+    
+    $r: Onda_R($startR: start, $endR: fin, $peakR: peak)
+        eval($startR > $endQ)
+        not Onda_R(start > $endQ && start < $startR)
+    
+    $s: Onda_S($startS: start, $endS: fin, $peakS: peak)
+        eval($startS > $endR)
+        not Onda_S(start > $endR && start < $startS)
+    
+    // Duración fisiológica típica del complejo QRS: 60–200 ms
+    eval(($endS - $startQ) >= 60 && ($endS - $startQ) <= 200)
 then
     int duracion = $endS - $startQ;
     double amplitudTotal = $peakR - Math.min($peakQ, $peakS);
 
-    Complejo_QRS qrs = new Complejo_QRS($q, $r, $s, duracion);
-    insert(qrs);
+    insert(new Complejo_QRS($q, $r, $s, duracion));
 
-    // Marcar ondas como usadas (para que no se reusen)
-    modify($q) { setUsada(); }
-    modify($r) { setUsada(); }
-    modify($s) { setUsada(); }
-
-    System.out.println("Complejo QRS detectado: inicio=" + $startQ + "ms, fin=" + $endS +
-                       "ms, duración=" + duracion + "ms, amplitud=" + amplitudTotal);
+    System.out.println(
+        "Complejo QRS detectado: inicio=" + $startQ + 
+        "ms, fin=" + $endS + "ms, duración=" + duracion + 
+        "ms, amplitud=" + amplitudTotal
+    );
 end
 
 
@@ -155,7 +176,7 @@ rule "Crear Intervalo QT"
         insert(intervaloQT);
         System.out.println("Intervalo QT: " + $startQ + " -> " + $endT + " | Duración: " + duracion + "ms");
 end
-*/
+
 rule "Crear Segmento PR"
     when
         $p: Onda_P(usada == true, $endP: fin)
@@ -185,4 +206,4 @@ rule "Crear Segmento ST"
         insert(segmentoST);
         System.out.println("Segmento ST: " + $endS + " -> " + $startT +"| Duración: " + duracion + "ms");
 end
-
+*/
