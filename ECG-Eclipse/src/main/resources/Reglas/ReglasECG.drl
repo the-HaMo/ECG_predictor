@@ -110,19 +110,15 @@ end
 
 rule "Creacion Complejo_QRS"
 when
-    // Ondas en orden correcto (sin usada)
     $q: Onda_Q($startQ: start, $endQ: fin, $peakQ: peak)
     
     $r: Onda_R($startR: start, $endR: fin, $peakR: peak)
-        eval($startR > $endQ)
-        not Onda_R(start > $endQ && start < $startR)
+        eval($startR >= $endQ)
     
     $s: Onda_S($startS: start, $endS: fin, $peakS: peak)
-        eval($startS > $endR)
-        not Onda_S(start > $endR && start < $startS)
+        eval($startS >= $endR)
     
-    // Duración fisiológica típica del complejo QRS: 60–200 ms
-    eval(($endS - $startQ) >= 60 && ($endS - $startQ) <= 200)
+    eval(($endS - $startQ) >= 80 && ($endS - $startQ) <= 120)
 then
     int duracion = $endS - $startQ;
     double amplitudTotal = $peakR - Math.min($peakQ, $peakS);
