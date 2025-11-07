@@ -1,4 +1,4 @@
-; Fri Nov 07 10:59:22 GMT+01:00 2025
+; Fri Nov 07 11:21:24 GMT+01:00 2025
 ; 
 ;+ (version "3.4.8")
 ;+ (build "Build 629")
@@ -43,7 +43,7 @@
 	(%3APAL-DESCRIPTION "Una onda su incio empieza por P y termina por T comenzando la siguiente onda por P.")
 	(%3APAL-NAME "Las ondas deben seguir el orden correcto P, Q, R, S, T")
 	(%3APAL-RANGE "(defrange ?ondaP :FRAME OndaP)\n(defrange ?ondaQ :FRAME OndaQ)\n(defrange ?ondaR :FRAME OndaR)\n(defrange ?ondaS :FRAME OndaS)\n(defrange ?ondaT :FRAME OndaT)")
-	(%3APAL-STATEMENT "; La onda Q debe comenzar después de que termine la onda P\n(forall ?ondaP\n        (forall ?ondaQ\n                (=> (and (own-slot-not-null End ?ondaP)\n                         (own-slot-not-null Start ?ondaQ))\n                    (>= (Start ?ondaQ) (End ?ondaP))\n                )\n        )\n)\n\n; La onda R debe comenzar después de que termine la onda Q\n(forall ?ondaQ\n        (forall ?ondaR\n                (=> (and (own-slot-not-null End ?ondaQ)\n                         (own-slot-not-null Start ?ondaR))\n                    (>= (Start ?ondaR) (End ?ondaQ))\n                )\n        )\n)\n\n; La onda S debe comenzar después de que termine la onda R\n(forall ?ondaR\n        (forall ?ondaS\n                (=> (and (own-slot-not-null End ?ondaR)\n                         (own-slot-not-null Start ?ondaS))\n                    (>= (Start ?ondaS) (End ?ondaR))\n                )\n        )\n)\n\n; La onda T debe comenzar después de que termine la onda S\n(forall ?ondaS\n        (forall ?ondaT\n                (=> (and (own-slot-not-null End ?ondaS)\n                         (own-slot-not-null Start ?ondaT))\n                    (>= (Start ?ondaT) (End ?ondaS))\n                )\n        )\n)\n"))
+	(%3APAL-STATEMENT "; La onda Q debe comenzar después de que termine la onda P\n(forall ?ondaP\n        (forall ?ondaQ\n                (=> (and (own-slot-not-null End ?ondaP)\n                         (own-slot-not-null Start ?ondaQ))\n                    (>= (Start ?ondaQ) (End ?ondaP))\n                )\n        )\n)\n\n; La onda R debe comenzar después de que termine la onda Q\n(forall ?ondaQ\n        (forall ?ondaR\n                (=> (and (own-slot-not-null End ?ondaQ)\n                         (own-slot-not-null Start ?ondaR))\n                    (>= (Start ?ondaR) (End ?ondaQ))\n                )\n        )\n)\n\n; La onda S debe comenzar después de que termine la onda R\n(forall ?ondaR\n        (forall ?ondaS\n                (=> (and (own-slot-not-null End ?ondaR)\n                         (own-slot-not-null Start ?ondaS))\n                    (>= (Start ?ondaS) (End ?ondaR))\n                )\n        )\n)\n\n; La onda T debe comenzar después de que termine la onda S\n(forall ?ondaS\n        (forall ?ondaT\n                (=> (and (own-slot-not-null End ?ondaS)\n                         (own-slot-not-null Start ?ondaT))\n                    (>= (Start ?ondaT) (End ?ondaS))\n                )\n        )\n)\n\n)\n"))
 
 ([Ontodologia+ECG_Class10000] of  Sano
 
@@ -54,21 +54,21 @@
 	(%3APAL-DESCRIPTION "Valida que el pico de amplitud de la onda sea un valor negativo")
 	(%3APAL-NAME "Amplitud negativa")
 	(%3APAL-RANGE "(defrange ?ondaQ :FRAME OndaQ)\n")
-	(%3APAL-STATEMENT "; La onda Q debe ser negativa\n(forall ?ondaQ\n        (=> (own-slot-not-null Peak ?ondaQ)\n            (< (Peak ?ondaQ) 0)\n        )\n)\n\n; End > Start\n(forall ?ondaQ\n        (=> (and (own-slot-not-null Start ?ondaQ)\n                 (own-slot-not-null End ?ondaQ))\n            (> (End ?ondaQ) (Start ?ondaQ))\n        )\n)\n\n"))
+	(%3APAL-STATEMENT "; La onda Q debe ser negativa\n(forall ?ondaQ\n        (=> (own-slot-not-null Peak ?ondaQ)\n            (< (Peak ?ondaQ) 0)\n        )\n)\n"))
 
 ([Ontodologia+ECG_Class12] of  %3APAL-CONSTRAINT
 
 	(%3APAL-DESCRIPTION "Valida que el pico de amplitud de la onda sea un valor positivo")
 	(%3APAL-NAME "Amplitud positiva")
 	(%3APAL-RANGE "(defrange ?ondaR :FRAME OndaR)\n")
-	(%3APAL-STATEMENT "; La onda R debe ser positiva\n(forall ?ondaR\n        (=> (own-slot-not-null Peak ?ondaR)\n            (> (Peak ?ondaR) 0)\n        )\n)\n\n; End > Start\n(forall ?ondaR\n        (=> (true)\n            (> (End ?ondaR) (Start ?ondaR))\n        )\n)\n\n\n"))
+	(%3APAL-STATEMENT "; La onda R debe ser positiva\n(forall ?ondaR\n        (=> (own-slot-not-null Peak ?ondaR)\n            (> (Peak ?ondaR) 0)\n        )\n)\n"))
 
 ([Ontodologia+ECG_Class13] of  %3APAL-CONSTRAINT
 
 	(%3APAL-DESCRIPTION "Valida que el pico de amplitud de la onda sea un valor negativo")
 	(%3APAL-NAME "Amplitud negativa")
 	(%3APAL-RANGE "(defrange ?ondaS :FRAME OndaS)\n")
-	(%3APAL-STATEMENT "; La onda S debe ser negativa\n(forall ?ondaS\n        (=> (own-slot-not-null Peak ?ondaS)\n            (< (Peak ?ondaS) 0)\n        )\n)\n\n; End > Start\n(forall ?ondaS\n        (=> (and (own-slot-not-null Start ?ondaS)\n                 (own-slot-not-null End ?ondaS))\n            (> (End ?ondaS) (Start ?ondaS))\n        )\n)\n"))
+	(%3APAL-STATEMENT "; La onda S debe ser negativa\n(forall ?ondaS\n        (=> (own-slot-not-null Peak ?ondaS)\n            (< (Peak ?ondaS) 0)\n        )\n)"))
 
 ([Ontodologia+ECG_Class14] of  %3APAL-CONSTRAINT
 
@@ -190,11 +190,11 @@
 
 	(%3APAL-NAME "Final mayor que el inicio")
 	(%3APAL-RANGE "(defrange ?intervalo :FRAME Intervalo)\n(defrange ?intervaloPQ :FRAME IntervaloPQ)\n(defrange ?intervaloQT :FRAME IntervaloQT)\n(defrange ?ondaP :FRAME OndaP)\n(defrange ?ondaQ :FRAME OndaQ)\n(defrange ?ondaT :FRAME OndaT)\n")
-	(%3APAL-STATEMENT "\n; Fin > Inicio\n(forall ?intervalo\n        (=> (and (own-slot-not-null Inicio ?intervalo)\n                 (own-slot-not-null Fin ?intervalo))\n            (> (Fin ?intervalo) (Inicio ?intervalo))\n        )\n)\n\n; Duración >= 0\n(forall ?intervalo\n        (=> (own-slot-not-null Duración ?intervalo)\n            (>= (Duración ?intervalo) 0)\n        )\n)\n\n; Duración = Fin - Inicio\n(forall ?intervalo\n        (=> (and (own-slot-not-null Inicio ?intervalo)\n                 (own-slot-not-null Fin ?intervalo)\n                 (own-slot-not-null Duración ?intervalo))\n            (= (Duración ?intervalo) (- (Fin ?intervalo) (Inicio ?intervalo)))\n        )\n)\n"))
+	(%3APAL-STATEMENT "\n; Fin > Inicio\n(forall ?intervalo\n        (=> (and (own-slot-not-null Inicio ?intervalo)\n                 (own-slot-not-null Fin ?intervalo))\n            (> (Fin ?intervalo) (Inicio ?intervalo))\n        )\n)\n\n\n; Duración = Fin - Inicio\n(forall ?intervalo\n        (=> (and (own-slot-not-null Inicio ?intervalo)\n                 (own-slot-not-null Fin ?intervalo)\n                 (own-slot-not-null Duración ?intervalo))\n            (= (Duración ?intervalo) (- (Fin ?intervalo) (Inicio ?intervalo)))\n        )\n)\n"))
 
 ([Ontodologia+ECG_Class9] of  %3APAL-CONSTRAINT
 
 	(%3APAL-DESCRIPTION "Valida que el pico de amplitud de la onda sea un valor positiva")
 	(%3APAL-NAME "Amplitud positiva")
 	(%3APAL-RANGE "(defrange ?ondaP :FRAME OndaP)\n\n\n")
-	(%3APAL-STATEMENT "; La onda P debe ser positiva\n(forall ?ondaP\n        (=> (own-slot-not-null Peak ?ondaP)\n            (> (Peak ?ondaP) 0)\n        )\n)\n\n; End > Start\n(forall ?ondaP\n        (=> (and (own-slot-not-null Start ?ondaP)\n                 (own-slot-not-null End ?ondaP))\n            (> (End ?ondaP) (Start ?ondaP))\n        )\n)\n"))
+	(%3APAL-STATEMENT "; La onda P debe ser positiva\n(forall ?ondaP\n        (=> (own-slot-not-null Peak ?ondaP)\n            (> (Peak ?ondaP) 0)\n        )\n)\n"))
