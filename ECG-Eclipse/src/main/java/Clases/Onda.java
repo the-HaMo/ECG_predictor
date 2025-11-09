@@ -5,14 +5,13 @@ public abstract class Onda {
 	private int start;
 	private int fin;
 	private double peak;
-	private boolean usada; // para Drools 
+	
 	
 	
 	 public Onda(int start, int fin, double peak) {
 	        this.start = start;
 	        this.fin = fin;
 	        this.peak = peak;
-	        this.usada = false; // valor por defecto
 	    }
 
 
@@ -45,23 +44,10 @@ public abstract class Onda {
 		this.peak = peak;
 	}
 
-	
-	public boolean isUsada() {
-		return usada;
-	}
-
-
-	public void setUsada() {
-		this.usada = true;
-	}
-
 
 	@Override
 	public String toString() {
 		return getClass().getSimpleName() + " [start=" + start + ", end=" + fin + ", peak=" + peak + "]";
 	}
-	
-	
-	
 	
 }

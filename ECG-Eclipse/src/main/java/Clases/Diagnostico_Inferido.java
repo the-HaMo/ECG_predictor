@@ -1,20 +1,33 @@
 package Clases;
 
-public abstract class Diagnostico_Inferido {
+import java.util.HashSet;
+import java.util.Set;
 
-	 private Diagnostico resultado;
+public class Diagnostico_Inferido {
+
+	 private Set<Diagnostico> resultados = new HashSet<>();
 
 	public Diagnostico_Inferido(Diagnostico resultado) {
-		super();
-		this.resultado = resultado;
+		this.resultados.add(resultado);
+	}
+	
+	public Diagnostico_Inferido(Diagnostico... resultados) {
+		for (Diagnostico dig : resultados) {
+			this.resultados.add(dig);
+		}
 	}
 
-	public Diagnostico getResultado() {
-		return resultado;
+	public Set<Diagnostico> getResultados() {
+        return new HashSet<>(resultados);
+    }
+	
+	public void addDiagnostico(Diagnostico diagnostico) {
+		this.resultados.add(diagnostico);
 	}
-
-	public void setResultado(Diagnostico resultado) {
-		this.resultado = resultado;
-	}
-	 
+	
+	@Override
+    public String toString() {
+        return "Diagnóstico(s) inferido(s): " + resultados;
+    }
+	
 }

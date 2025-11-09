@@ -1,5 +1,5 @@
 package Clases;
-
+// CREO QUE NO HACE FALTA 
 public class Segmento_PR extends Segmento{
 
 	public Segmento_PR(int inicio, int fin, double amp, int duracion) {

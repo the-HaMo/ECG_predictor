@@ -113,17 +113,18 @@ when
     $q: Onda_Q($startQ: start, $endQ: fin, $peakQ: peak)
     
     $r: Onda_R($startR: start, $endR: fin, $peakR: peak)
-        eval($startR >= $endQ)
+        eval($startR >= $endQ) // la mas cercana
     
     $s: Onda_S($startS: start, $endS: fin, $peakS: peak)
         eval($startS >= $endR)
     
-    eval(($endS - $startQ) >= 80 && ($endS - $startQ) <= 120)
+    eval(($endS - $startQ) <= 120)
+    not(Complejo_QRS( q == $q, r == $r, s == $s )) // comprobar que el complejo QRS ya no exista
 then
     int duracion = $endS - $startQ;
     double amplitudTotal = $peakR - Math.min($peakQ, $peakS);
 
-    insert(new Complejo_QRS($q, $r, $s, duracion));
+    insert(new Complejo_QRS($q, $r, $s, duracion)); 
 
     System.out.println(
         "Complejo QRS detectado: inicio=" + $startQ + 
@@ -132,7 +133,106 @@ then
     );
 end
 
+rule "Crear Intervalo QT" // A lo mejor es necesario el peak
+when
+    $q: Onda_Q($startQ: start, $endQ: fin)
+    $t: Onda_T($startT: start, $endT: fin)
+        eval($startT > $endQ)
+        not(Onda_T(start > $endQ && start < $startT))
+    // Duración fisiológica típica del QT < 600 ms
+    eval(($endT - $startQ) < 600)
+    // Evitar duplicados
+    not(Intervalo_QT(inicio == $startQ, fin == $endT))
+then
+    int duracion = $endT - $startQ;
+    Intervalo_QT intervaloQT = new Intervalo_QT($startQ, $endT, duracion);
+    insert(intervaloQT);
+
+    System.out.println("Intervalo QT detectado: inicio=" + $startQ + "ms, fin=" + $endT +
+        "ms, duración=" + duracion + "ms");
+end
+
+
+rule "Crear Segmento ST"
+when
+    $s: Onda_S($endS: fin, $peakS: peak)
+    $t: Onda_T($startT: start, $endT: fin, $peakT: peak)
+        eval($startT > $endS)
+        // Garantizar que sea la PRIMERA T tras la S
+        not(Onda_T(start > $endS && start < $startT))
+    // Verificar que pertenecen al mismo ciclo cardíaco
+    eval($startT - $endS < 300)
+    // Evitar duplicados
+    not(Segmento_ST(inicio == $endS, fin == $startT))
+then
+    int duracion = $startT - $endS;
+    double amplitudST = ($peakT + $peakS) / 2.0; // media de las dos
+    Segmento_ST segmentoST = new Segmento_ST($endS, $startT, amplitudST, duracion);
+    insert(segmentoST);
+    System.out.println(
+        "Segmento ST detectado: inicio=" + $endS + "ms, fin=" + $startT + "ms, duración=" + duracion + "ms, amplitud media=" + amplitudST);
+end
+
+
+rule "Detectar Taquicardia"
+when
+    $analisis : Analisis_Señal($ritmo : ritmo_cardiaco)
+        eval($ritmo > 100)
+then
+    System.out.println(
+        "Taquicardia detectada: Ritmo cardíaco = " + 
+        $ritmo + " pul/min"
+    );
+
+    // Insertamos un objeto de resultado si deseas registrar el diagnóstico
+    insert(new Diagnostico_Inferido(Diagnostico.TAQUICARDIA_SINUSAL));
+end
+
+rule "Detectar Braquicardia"
+when
+    $analisis : Analisis_Señal($ritmo : ritmo_cardiaco)
+        eval($ritmo < 60 )
+then
+    System.out.println(
+        "Braquicardia detectada: Ritmo cardíaco = " + 
+        $ritmo + " pul/min"
+    );
+
+    // Insertamos un objeto de resultado si deseas registrar el diagnóstico
+    insert(new Diagnostico_Inferido(Diagnostico.BRADICARDIA_SINUSAL));
+end
+
 /*
+rule "Detectar Hipopotasemia"
+when
+    $ts : List() from collect(Onda_T($peak: peak))
+    $sts : List() from collect(Segmento_ST($amp: amplitud))
+    $analisis : Analisis_Señal($ritmo: ritmo_cardiaco)
+then
+    double sumaT = 0;
+    for (Object tObj : $ts) {
+        Onda_T t = (Onda_T) tObj;
+        sumaT += t.getPeak();
+    }
+    double mediaT = sumaT / $ts.size();
+
+    double sumaST = 0;
+    for (Object stObj : $sts) {
+        Segmento_ST st = (Segmento_ST) stObj;
+        sumaST += st.getAmplitud();
+    }
+    double mediaST = sumaST / $sts.size();
+
+    // Hipopotasemia: T muy negativa y ST deprimido
+    if (mediaT < -12 && mediaST < -0.5 && $ritmo <= 100) {
+        System.out.println("Hipopotasemia detectada: Media T=" + mediaT + ", Media ST=" + mediaST + ", Ritmo=" + $ritmo);
+        insert(new Diagnostico_Inferido(Diagnostico.HIPOPOTASEMIA));
+    }
+end
+
+
+/*
+// CREO QUE NO HACE FALTA
 rule "Creacion Intervalo PR"
     when
         $p: Onda_P(usada == true, $startP: start)
@@ -148,21 +248,6 @@ rule "Creacion Intervalo PR"
         System.out.println("Intervalo PR: " + $startP + " -> " + $startQ + " | Duración: " + duracion + "ms");
 end
 
-rule "Crear Intervalo QT"
-    when
-        $q: Onda_Q(usada == true, $startQ: start)
-        $t: Onda_T(usada == true, $startT: start, $endT: fin, start > $q.fin)
-        
-        // T debe estar cerca de Q (mismo ciclo) e Intervalo QT típico < 600ms
-        eval($endT - $startQ < 600)  
-        not(Intervalo_QT(inicio == $startQ, fin == $endT))
-    then
-        int duracion = $endT - $startQ;
-        Intervalo_QT intervaloQT = new Intervalo_QT($startQ, $endT, duracion);
-        insert(intervaloQT);
-        System.out.println("Intervalo QT: " + $startQ + " -> " + $endT + " | Duración: " + duracion + "ms");
-end
-
 rule "Crear Segmento PR"
     when
         $p: Onda_P(usada == true, $endP: fin)
@@ -176,20 +261,5 @@ rule "Crear Segmento PR"
         Segmento_PR segmentoPR = new Segmento_PR($endP, $startQ, 0.0, duracion);
         insert(segmentoPR);
         System.out.println("Segmento PR: " + $endP + " -> " + $startQ + " | Duración: " + duracion + "ms");
-end
-
-rule "Crear Segmento ST"
-    when
-        $s: Onda_S(usada == true, $endS: fin)
-        $t: Onda_T(usada == true, $startT: start, start > $endS)
-        
-        // Verificar que están en el mismo ciclo
-        eval($startT - $endS < 300)
-        not(Segmento_ST(inicio == $endS, fin == $startT))
-    then
-        int duracion = $startT - $endS;
-        Segmento_ST segmentoST = new Segmento_ST($endS, $startT, 0.0, duracion);
-        insert(segmentoST);
-        System.out.println("Segmento ST: " + $endS + " -> " + $startT +"| Duración: " + duracion + "ms");
 end
 */
