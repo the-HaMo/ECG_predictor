@@ -13,7 +13,7 @@ public class LectorFicheroPrueba {
 	
 	public static void main(String[] args) throws Exception {
 	    
-		String dirEnt = "C:\\Users\\Usuario\\OneDrive\\Escritorio\\DSIN\\Electrocardiograma\\ECG_predictor\\inputs";
+		String dirEnt = "C:\\Users\\MSI\\OneDrive - UNIVERSIDAD DE MURCIA\\Escritorio\\4_Carrera\\DSINT\\ECG_predictor\\inputs";
         String dirSal = "C:\\Users\\Usuario\\OneDrive\\Escritorio\\DSIN\\ficherosSalida";
 
         try {
