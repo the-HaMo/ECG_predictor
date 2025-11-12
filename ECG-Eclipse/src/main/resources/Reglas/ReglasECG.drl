@@ -2,6 +2,8 @@
 package Reglas
 import Clases.*
 import java.util.ArrayList
+import java.util.List
+
 
 //list any import classes here.
 
@@ -45,11 +47,8 @@ then
 
     insert(new Ciclo_Cardiaco(duracion));
 
-    System.out.println(
-        "Ciclo cardíaco detectado (con T): desde " + 
-        $startQ + "ms hasta " + finCiclo + 
-        "ms. Duración: " + duracion
-    );
+    //System.out.println( "Ciclo cardíaco detectado (con T): desde " +  $startQ + "ms hasta " + finCiclo + "ms. Duración: " + duracion );
+    
 end
 
 rule "Detectar Ciclo cardíaco sin T"
@@ -76,11 +75,7 @@ then
 
     insert(new Ciclo_Cardiaco(duracion));
 
-    System.out.println(
-        "Ciclo cardíaco detectado (sin T): desde " + 
-        $startQ + "ms hasta " + finCiclo + 
-        "ms. Duración: " + duracion
-    );
+    //System.out.println( "Ciclo cardíaco detectado (sin T): desde " + $startQ + "ms hasta " + finCiclo +   "ms. Duración: " + duracion);
 end
 
 
@@ -104,8 +99,8 @@ then
     int ritmo_cardiaco = (60000 * numCiclos) / duracionTotal;
     insert(new Analisis_Señal(numCiclos, ritmo_cardiaco));
 
-    System.out.println("Num_cycles : " + numCiclos);
-    System.out.println("Heart_Rate : " + ritmo_cardiaco + " pul/min");
+   // System.out.println("Num_cycles : " + numCiclos);
+   // System.out.println("Heart_Rate : " + ritmo_cardiaco + " pul/min");
 end
 
 rule "Creacion Complejo_QRS"
@@ -125,12 +120,7 @@ then
     double amplitudTotal = $peakR - Math.min($peakQ, $peakS);
 
     insert(new Complejo_QRS($q, $r, $s, duracion)); 
-
-    System.out.println(
-        "Complejo QRS detectado: inicio=" + $startQ + 
-        "ms, fin=" + $endS + "ms, duración=" + duracion + 
-        "ms, amplitud=" + amplitudTotal
-    );
+	//System.out.println("Complejo QRS detectado: inicio=" + $startQ +  "ms, fin=" + $endS + "ms, duración=" + duracion + "ms, amplitud=" + amplitudTotal );
 end
 
 rule "Crear Intervalo QT" // A lo mejor es necesario el peak
@@ -148,8 +138,7 @@ then
     Intervalo_QT intervaloQT = new Intervalo_QT($startQ, $endT, duracion);
     insert(intervaloQT);
 
-    System.out.println("Intervalo QT detectado: inicio=" + $startQ + "ms, fin=" + $endT +
-        "ms, duración=" + duracion + "ms");
+    //System.out.println("Intervalo QT detectado: inicio=" + $startQ + "ms, fin=" + $endT +"ms, duración=" + duracion + "ms");
 end
 
 
@@ -169,8 +158,7 @@ then
     double amplitudST = ($peakT + $peakS) / 2.0; // media de las dos
     Segmento_ST segmentoST = new Segmento_ST($endS, $startT, amplitudST, duracion);
     insert(segmentoST);
-    System.out.println(
-        "Segmento ST detectado: inicio=" + $endS + "ms, fin=" + $startT + "ms, duración=" + duracion + "ms, amplitud media=" + amplitudST);
+    System.out.println("Segmento ST detectado: inicio=" + $endS + "ms, fin=" + $startT + "ms, duración=" + duracion + "ms, amplitud media=" + amplitudST);
 end
 
 
@@ -229,6 +217,45 @@ then
         insert(new Diagnostico_Inferido(Diagnostico.HIPOPOTASEMIA));
     }
 end
+
+rule "Detectar Infarto Agudo de Miocardio Temprano"
+when
+    // Q ancha (>40 ms)
+    $q : Onda_Q($durQ : fin - start)
+        eval($durQ > 40)
+
+    // Segmento ST (para referencia temporal)
+    $st : Segmento_ST($endS : fin)
+
+    // T anormal (alta o invertida) cercana a fin de ST
+    $t : Onda_T($startT : start, $peakT : peak)
+        eval($startT < ($endS + 40))
+        eval($peakT > 0.6)
+
+    // Evita repetir diagnóstico si ya se insertó uno con ese resultado
+    not(Diagnostico_Inferido(resultados contains Diagnostico.INFARTO_AGUDO_MIOCARDIO))
+then
+    System.out.println("Infarto Agudo de Miocardio (temprano) detectado: " +
+        "T anormal (peak=" + $peakT + "), Q ancha (" + $durQ + " ms)");
+
+    insert(new Diagnostico_Inferido(Diagnostico.INFARTO_AGUDO_MIOCARDIO));
+end
+
+
+rule "Detectar Hipocalcemia"
+when
+	$qt : Intervalo_QT( $duracionQT : fin - start )
+		eval($duracionQT >440)
+	$st : Segmento_ST($duracionST : fin -start)
+		eval($duracionST <80)
+	not(Diagnostico_Inferido(resultados contains Diagnostico.HIPOCALCEMIA))
+then
+	System.out.println("Hipocalcemia detectada: QT prolongado (" + $duracionQT + 
+       " ms), ST corto (" + $duracionST + " ms)");
+
+    insert(new Diagnostico_Inferido(Diagnostico.INFARTO_AGUDO_MIOCARDIO));
+end
+
 
 
 /*
