@@ -120,7 +120,7 @@ then
     double amplitudTotal = $peakR - Math.min($peakQ, $peakS);
 
     insert(new Complejo_QRS($q, $r, $s, duracion)); 
-	System.out.println("Complejo QRS detectado: inicio=" + $startQ +  "ms, fin=" + $endS + "ms, duración=" + duracion + "ms, amplitud=" + amplitudTotal );
+	//System.out.println("Complejo QRS detectado: inicio=" + $startQ +  "ms, fin=" + $endS + "ms, duración=" + duracion + "ms, amplitud=" + amplitudTotal );
 end
 
 rule "Crear Intervalo QT" // A lo mejor es necesario el peak
@@ -253,7 +253,7 @@ then
 	System.out.println("Hipocalcemia detectada: QT prolongado (" + $duracionQT + 
        " ms), ST corto (" + $duracionST + " ms)");
 
-    insert(new Diagnostico_Inferido(Diagnostico.INFARTO_AGUDO_MIOCARDIO));
+    insert(new Diagnostico_Inferido(Diagnostico.HIPOCALCEMIA));
 end
 
 rule "Isquemia Coronaria"
@@ -290,6 +290,19 @@ then
     insert(new Diagnostico_Inferido(Diagnostico.CONTRACCION_VENTRICULAR_PREMATURA));
 end
 
+rule "Normal"
+when
+    not(Diagnostico_Inferido(resultados contains Diagnostico.HIPOPOTASEMIA))
+    not(Diagnostico_Inferido(resultados contains Diagnostico.HIPOCALCEMIA))
+    not(Diagnostico_Inferido(resultados contains Diagnostico.INFARTO_AGUDO_MIOCARDIO))
+    not(Diagnostico_Inferido(resultados contains Diagnostico.ISQUEMIA_CORONARIA))
+    not(Diagnostico_Inferido(resultados contains Diagnostico.TAQUICARDIA_SINUSAL))
+    not(Diagnostico_Inferido(resultados contains Diagnostico.BRADICARDIA_SINUSAL))
+    not(Diagnostico_Inferido(resultados contains Diagnostico.CONTRACCION_VENTRICULAR_PREMATURA))
+then
+    System.out.println("Paciente Sano.");
+    insert(new Diagnostico_Inferido(Diagnostico.SANO));
+end
 
 /*
 // CREO QUE NO HACE FALTA
