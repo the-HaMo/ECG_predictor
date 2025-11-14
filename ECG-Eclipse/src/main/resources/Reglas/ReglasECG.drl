@@ -38,7 +38,7 @@ when
         not Onda_S(start > $startR && start < $startS)
 
     // T inmediatamente posterior a S (la primera después de S)
-    $t: Onda_T($startT: start, $endT: fin)
+    $t: Onda_T($startT: start, $endT: fin, $peak: peak )
         eval($startT > $startS)
         not Onda_T(start > $startS && start < $startT)
 then
@@ -47,7 +47,7 @@ then
 
     insert(new Ciclo_Cardiaco(duracion));
 
-    //System.out.println( "Ciclo cardíaco detectado (con T): desde " +  $startQ + "ms hasta " + finCiclo + "ms. Duración: " + duracion );
+    // System.out.println( "Ciclo cardíaco detectado (con T): desde " +  $startQ + "ms hasta " + finCiclo + "ms. Duración: " + duracion + "peak: " + $peak );
     
 end
 
@@ -158,7 +158,7 @@ then
     double amplitudST = ($peakT + $peakS) / 2.0; // media de las dos
     Segmento_ST segmentoST = new Segmento_ST($endS, $startT, amplitudST, duracion);
     insert(segmentoST);
-    //System.out.println("Segmento ST detectado: inicio=" + $endS + "ms, fin=" + $startT + "ms, duración=" + duracion + "ms, amplitud media=" + amplitudST);
+    // System.out.println("Segmento ST detectado: inicio=" + $endS + "ms, fin=" + $startT + "ms, duración=" + duracion + "ms, amplitud media=" + amplitudST);
 end
 
 
@@ -190,7 +190,7 @@ then
     insert(new Diagnostico_Inferido(Diagnostico.BRADICARDIA_SINUSAL));
 end
 
-
+/*
 rule "Detectar Hipopotasemia"
 when
     // Promedio del valor pico de todas las ondas T
@@ -205,17 +205,15 @@ when
         average($amp)
     )
 
-    // Ritmo cardíaco global
-    $a : Analisis_Señal($ritmo : ritmo_cardiaco)
 then
     // Criterios fisiológicos de hipopotasemia
-    if ($mediaT < -12  && $mediaST < -0.5 && $ritmo <= 100) {
+    if ($mediaT < -12  && $mediaST < -0.5) {
         System.out.println("Hipopotasemia detectada: mediaT=" + $mediaT +
-                           ", mediaST=" + $mediaST +
-                           ", ritmo=" + $ritmo);
+                           ", mediaST=" + $mediaST);
         insert(new Diagnostico_Inferido(Diagnostico.HIPOPOTASEMIA));
     }
 end
+*/
 
 
 rule "Detectar Infarto Agudo de Miocardio Temprano"
@@ -244,30 +242,36 @@ end
 
 rule "Detectar Hipocalcemia"
 when
-	$qt : Intervalo_QT( $duracionQT : fin - start )
+	$qt : Intervalo_QT( $duracionQT : duracion )
 		eval($duracionQT >440)
-	$st : Segmento_ST($duracionST : fin -start)
-		eval($duracionST <80)
+	
 	not(Diagnostico_Inferido(resultados contains Diagnostico.HIPOCALCEMIA))
 then
 	System.out.println("Hipocalcemia detectada: QT prolongado (" + $duracionQT + 
-       " ms), ST corto (" + $duracionST + " ms)");
+       " ms)");
 
     insert(new Diagnostico_Inferido(Diagnostico.HIPOCALCEMIA));
 end
 
 rule "Isquemia Coronaria"
 when
-    $mediaT : Double() from accumulate(Onda_T($peak: peak), average($peak))
-    $mediaST : Double() from accumulate(Segmento_ST($amp: amplitud), average($amp))
+    // Onda T individual típica de isquemia
+    $t: Onda_T($peak: peak) 
+        eval($peak < -5.0 && $peak > -12.0) // Para confundir con hipopotasemia
+
+    // Segmento ST correspondiente
+    $st: Segmento_ST($amp: amplitud) 
+        eval($amp < -1.0 && $amp > -6.0) // Para confundir con hipopotasemia
+     
+    not(Diagnostico_Inferido(resultados contains Diagnostico.ISQUEMIA_CORONARIA))   
+      
 then
-    if ($mediaT < -5 && $mediaT > -12 && $mediaST < -1 && $mediaST > -6) {
-        insert(new Diagnostico_Inferido(Diagnostico.ISQUEMIA_CORONARIA));
-        System.out.println("Isquemia Coronaria detectada: mediaT=" + $mediaT + ", mediaST=" + $mediaST);
-    }
+    System.out.println("Isquemia Coronaria detectada: Onda T peak=" + $peak + ", ST amp=" + $amp);
+    insert(new Diagnostico_Inferido(Diagnostico.ISQUEMIA_CORONARIA));
 end
 
 
+/*
 rule "Contraccion Ventricular Prematura"
 when
     // Calcular el intervalo RR promedio
@@ -289,7 +293,7 @@ then
     
     insert(new Diagnostico_Inferido(Diagnostico.CONTRACCION_VENTRICULAR_PREMATURA));
 end
-
+*/
 rule "Normal"
 when
     not(Diagnostico_Inferido(resultados contains Diagnostico.HIPOPOTASEMIA))
