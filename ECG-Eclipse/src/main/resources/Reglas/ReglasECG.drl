@@ -112,7 +112,7 @@ when
     
     $s: Onda_S($startS: start, $endS: fin, $peakS: peak)
         eval($startS >= $endR)
-    
+     not(Complejo_QRS(q == $q, r == $r, s == $s))
     //eval(($endS - $startQ) <= 120)
     //not(Complejo_QRS( q == $q, r == $r, s == $s )) // comprobar que el complejo QRS ya no exista
 then
@@ -276,21 +276,15 @@ end
 
 rule "Contraccion Ventricular Prematura"
 when
-    // QRS ancho (> 120 ms)
     $qrs: Complejo_QRS($duracion: duracion, $inicioQRS: q.getStart())
         eval($duracion > 120)
-
-    // Sin onda P antes del QRS (200 ms antes)
     not(Onda_P(fin > ($inicioQRS - 200), fin <= $inicioQRS))
-
     not(Diagnostico_Inferido(resultados contains Diagnostico.CONTRACCION_VENTRICULAR_PREMATURA))
 then
-    System.out.println(
-        "Contracción Ventricular Prematura detectada: QRS ancho (" +
-        $duracion + " ms) sin onda P previa"
-    );
+    System.out.println("PVC: QRS ancho (" + $duracion + " ms) sin P previa");
     insert(new Diagnostico_Inferido(Diagnostico.CONTRACCION_VENTRICULAR_PREMATURA));
 end
+
 
 
 /*

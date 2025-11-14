@@ -77,4 +77,4 @@ Fichero: taquicardia2.ecg
 Diagnóstico(s):
   - [TAQUICARDIA_SINUSAL]
 
-  Total de ficheros procesados: 15
+Total de ficheros procesados: 15
