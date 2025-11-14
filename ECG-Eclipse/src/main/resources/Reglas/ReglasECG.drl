@@ -113,8 +113,8 @@ when
     $s: Onda_S($startS: start, $endS: fin, $peakS: peak)
         eval($startS >= $endR)
     
-    eval(($endS - $startQ) <= 120)
-    not(Complejo_QRS( q == $q, r == $r, s == $s )) // comprobar que el complejo QRS ya no exista
+    //eval(($endS - $startQ) <= 120)
+    //not(Complejo_QRS( q == $q, r == $r, s == $s )) // comprobar que el complejo QRS ya no exista
 then
     int duracion = $endS - $startQ;
     double amplitudTotal = $peakR - Math.min($peakQ, $peakS);
@@ -190,7 +190,7 @@ then
     insert(new Diagnostico_Inferido(Diagnostico.BRADICARDIA_SINUSAL));
 end
 
-/*
+
 rule "Detectar Hipopotasemia"
 when
     // Promedio del valor pico de todas las ondas T
@@ -213,28 +213,32 @@ then
         insert(new Diagnostico_Inferido(Diagnostico.HIPOPOTASEMIA));
     }
 end
-*/
+
+
 
 
 rule "Detectar Infarto Agudo de Miocardio Temprano"
 when
     // Q ancha (>40 ms)
-    $q : Onda_Q($durQ : fin - start)
-        eval($durQ > 40)
+    //$q : Onda_Q($durQ : fin - start)
+    //    eval($durQ > 40)
 
     // Segmento ST (para referencia temporal)
-    $st : Segmento_ST($endS : fin)
+    $st : Segmento_ST($ampST: amplitud)
+        eval($ampST > 0.1)
 
-    // T anormal (alta o invertida) cercana a fin de ST
-    $t : Onda_T($startT : start, $peakT : peak)
-        eval($startT < ($endS + 40))
+    // Onda T muy alta del mismo ciclo
+    //$t : Onda_T($startT : start, $peakT : peak)
+     //   eval($startT < ($endS + 40))
+     //   eval($peakT > 0.6)
+	$t : Onda_T($peakT: peak)
         eval($peakT > 0.6)
-
+        eval($t.getStart() == $st.getFin())
     // Evita repetir diagnóstico si ya se insertó uno con ese resultado
     not(Diagnostico_Inferido(resultados contains Diagnostico.INFARTO_AGUDO_MIOCARDIO))
 then
     System.out.println("Infarto Agudo de Miocardio (temprano) detectado: " +
-        "T anormal (peak=" + $peakT + "), Q ancha (" + $durQ + " ms)");
+        "T anormal (peak=" + $peakT + ")");
 
     insert(new Diagnostico_Inferido(Diagnostico.INFARTO_AGUDO_MIOCARDIO));
 end
@@ -268,6 +272,24 @@ when
 then
     System.out.println("Isquemia Coronaria detectada: Onda T peak=" + $peak + ", ST amp=" + $amp);
     insert(new Diagnostico_Inferido(Diagnostico.ISQUEMIA_CORONARIA));
+end
+
+rule "Contraccion Ventricular Prematura"
+when
+    // QRS ancho (> 120 ms)
+    $qrs: Complejo_QRS($duracion: duracion, $inicioQRS: q.getStart())
+        eval($duracion > 120)
+
+    // Sin onda P antes del QRS (200 ms antes)
+    not(Onda_P(fin > ($inicioQRS - 200), fin <= $inicioQRS))
+
+    not(Diagnostico_Inferido(resultados contains Diagnostico.CONTRACCION_VENTRICULAR_PREMATURA))
+then
+    System.out.println(
+        "Contracción Ventricular Prematura detectada: QRS ancho (" +
+        $duracion + " ms) sin onda P previa"
+    );
+    insert(new Diagnostico_Inferido(Diagnostico.CONTRACCION_VENTRICULAR_PREMATURA));
 end
 
 
