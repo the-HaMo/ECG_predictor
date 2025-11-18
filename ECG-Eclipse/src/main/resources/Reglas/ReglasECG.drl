@@ -126,7 +126,7 @@ then
 
     insert(new Complejo_QRS($q, $r, $s, duracion));
 
-    System.out.println("QRS detectado: Q=" + $startQ +"  R=" + $startR + "  S=" + $startS + "  dur=" + duracion);
+    //System.out.println("QRS detectado: Q=" + $startQ +"  R=" + $startR + "  S=" + $startS + "  dur=" + duracion);
 end
 
 
@@ -292,7 +292,7 @@ end
 rule "Contraccion Ventricular Prematura"
 when
     $qrs: Complejo_QRS($duracion: duracion, $inicioQRS: q.getStart())
-        eval($duracion > 120)
+        eval($duracion < 90)
     not(Diagnostico_Inferido(resultados contains Diagnostico.CONTRACCION_VENTRICULAR_PREMATURA))
 then
     System.out.println("PVC: QRS ancho (" + $duracion + " ms) sin P previa");
