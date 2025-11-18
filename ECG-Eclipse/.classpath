@@ -8,6 +8,6 @@
 		</attributes>
 	</classpathentry>
 	<classpathentry kind="con" path="DROOLS/Drools"/>
-	<classpathentry kind="lib" path="C:/Users/Usuario/Downloads/jFuzzyLogic.jar"/>
+	<classpathentry exported="true" kind="lib" path="C:/Users/Usuario/Downloads/jFuzzyLogic.jar"/>
 	<classpathentry kind="output" path="target/classes"/>
 </classpath>
