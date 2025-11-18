@@ -6,12 +6,14 @@ public class Complejo_QRS {
 	private Onda_Q q;
 	private Onda_R r;
 	private Onda_S s;
+	private double amplitudTotal;
 	
-	public Complejo_QRS( Onda_Q q, Onda_R r, Onda_S s, int duracion) {
+	public Complejo_QRS( Onda_Q q, Onda_R r, Onda_S s, int duracion, double amplitudTotal) {
 		this.duracion = duracion;
 		this.q = q;
 		this.r = r;
 		this.s = s;
+		this.amplitudTotal = amplitudTotal;
 	}
 
 	public int getDuracion() {
@@ -45,6 +47,16 @@ public class Complejo_QRS {
 	public void setS(Onda_S s) {
 		this.s = s;
 	}
+
+	public double getAmplitudTotal() {
+		return amplitudTotal;
+	}
+
+	public void setAmplitudTotal(double amplitudTotal) {
+		this.amplitudTotal = amplitudTotal;
+	}
+	
+	
 	
 	
 

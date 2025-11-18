@@ -14,7 +14,7 @@ public class LectorFicheroPrueba {
 	public static void main(String[] args) throws Exception {
 	    
 		String dirEnt = "C:\\Users\\Usuario\\OneDrive\\Escritorio\\DSIN\\Electrocardiograma\\ECG_predictor\\inputs";
-        String dirSal = "C:\\Users\\Usuario\\OneDrive\\Escritorio\\DSIN\\ficherosSalida";
+        String dirSal = "C:\\Users\\Usuario\\OneDrive\\Escritorio\\DSIN\\Electrocardiograma\\ECG_predictor\\salida";
 
         try {
             // Inicializar Drools
@@ -49,7 +49,9 @@ public class LectorFicheroPrueba {
                     kSession.insert(onda);
                 }
                 // Ejecutar reglas
-                System.out.println("Ejecutando reglas Drools...(Solo Imprime Ondas)");
+                // System.out.println("Ejecutando reglas Drools...(Solo Imprime Ondas)");
+                // kSession.getAgenda().getAgendaGroup("diagnostico").setFocus();
+                // kSession.getAgenda().getAgendaGroup("report").setFocus();
                 int ejec = kSession.fireAllRules();
                 System.out.println("Reglas ejecutadas: " + ejec);
                 

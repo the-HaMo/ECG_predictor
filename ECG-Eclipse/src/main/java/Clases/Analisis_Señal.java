@@ -5,7 +5,6 @@ public class Analisis_Señal {
 	private int numciclos;
 	private int ritmo_cardiaco;
 	public Analisis_Señal(int numciclos, int ritmo_cardiaco) {
-		super();
 		this.numciclos = numciclos;
 		this.ritmo_cardiaco = ritmo_cardiaco;
 	}

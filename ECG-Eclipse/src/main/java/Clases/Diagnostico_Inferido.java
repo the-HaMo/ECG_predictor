@@ -11,12 +11,6 @@ public class Diagnostico_Inferido {
 		this.resultados.add(resultado);
 	}
 	
-	public Diagnostico_Inferido(Diagnostico... resultados) {
-		for (Diagnostico dig : resultados) {
-			this.resultados.add(dig);
-		}
-	}
-
 	public Set<Diagnostico> getResultados() {
         return new HashSet<>(resultados);
     }

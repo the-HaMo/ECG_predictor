@@ -18,6 +18,7 @@ Diagnóstico(s):
 
 Fichero: hipocalcemia_hipopotasemia.ecg
 Diagnóstico(s):
+  - [HIPOPOTASEMIA]
   - [HIPOCALCEMIA]
 
 
@@ -29,8 +30,8 @@ Diagnóstico(s):
 
 Fichero: hipocalcemia_isqcoronaria.ecg
 Diagnóstico(s):
-  - [HIPOCALCEMIA]
   - [ISQUEMIA_CORONARIA]
+  - [HIPOCALCEMIA]
 
 
 Fichero: hipopotasemia.ecg
@@ -60,12 +61,12 @@ Diagnóstico(s):
 
 Fichero: premat-vent-contr1.ecg
 Diagnóstico(s):
-  - [SANO]
+  - [CONTRACCION_VENTRICULAR_PREMATURA]
 
 
 Fichero: premat-vent-contr2.ecg
 Diagnóstico(s):
-  - [SANO]
+  - [CONTRACCION_VENTRICULAR_PREMATURA]
 
 
 Fichero: taquicardia.ecg
