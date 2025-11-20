@@ -10,12 +10,12 @@ import org.kie.api.KieServices;
 import org.kie.api.runtime.KieContainer;
 import org.kie.api.runtime.KieSession;
 
-public class LectorFicheroPrueba {
+public class SIcompletoMain {
     
     public static void main(String[] args) throws Exception {
         
-        String dirEnt = "C:\\Users\\Usuario\\OneDrive\\Escritorio\\DSIN\\Electrocardiograma\\ECG_predictor\\inputs";
-        String dirSal = "C:\\Users\\Usuario\\OneDrive\\Escritorio\\DSIN\\Electrocardiograma\\ECG_predictor\\salida";
+        String dirEnt = "C:\\Users\\Usuario\\OneDrive\\Escritorio\\DSIN\\Electrocardiograma\\ECG_predictor\\ECG-Eclipse\\inputs";
+        String dirSal = "C:\\Users\\Usuario\\OneDrive\\Escritorio\\DSIN\\Electrocardiograma\\ECG_predictor\\ECG-Eclipse\\salida";
 
         try {
             // Inicializar Drools
@@ -59,19 +59,22 @@ public class LectorFicheroPrueba {
                 }
                 
                 // Ejecutar reglas
-                int ejec = kSession.fireAllRules();
-                System.out.println("  Reglas ejecutadas: " + ejec);
+                kSession.getAgenda().getAgendaGroup("inferencia").setFocus();
+                kSession.fireAllRules();
                 
-                // Recolectar diagnósticos Y análisis de señal
+                kSession.getAgenda().getAgendaGroup("diagnosticos").setFocus();
+                kSession.fireAllRules();
+
+                kSession.getAgenda().getAgendaGroup("report").setFocus();
+                kSession.fireAllRules();
+
+              
+                // Recolectar diagnósticos 
                 List<Diagnostico_Inferido> diagnosticos = new ArrayList<>();
-                Analisis_Señal analisisSenal = null;  // SIN EÑES
                 
                 for (Object obj : kSession.getObjects()) {
-                    if (obj instanceof Diagnostico_Inferido) {
+                    if (obj instanceof Diagnostico_Inferido) 
                         diagnosticos.add((Diagnostico_Inferido) obj);
-                    } else if (obj instanceof Analisis_Señal) {  // SIN EÑES
-                        analisisSenal = (Analisis_Señal) obj;
-                    }
                 }
                 
                 // Nombre del fichero sin extensión
@@ -81,12 +84,7 @@ public class LectorFicheroPrueba {
                 todosLosResultados.put(nombreFichero, diagnosticos);
                 
                 // **GENERAR ARCHIVO INDIVIDUAL**
-                OutputParser.escribirSalidaIndividual(
-                    nombreFichero, 
-                    diagnosticos, 
-                    analisisSenal, 
-                    dirSal
-                );
+                OutputParser.escribirSalidaIndividual(nombreFichero, diagnosticos, dirSal);
                 System.out.println("Archivo generado: " + nombreFichero + ".salida.txt");
                 
                 // Limpiar sesión

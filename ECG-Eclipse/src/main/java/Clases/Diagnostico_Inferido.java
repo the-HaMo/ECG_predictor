@@ -6,9 +6,11 @@ import java.util.Set;
 public class Diagnostico_Inferido {
 
 	 private Set<Diagnostico> resultados = new HashSet<>();
+	 private String outline;
 
-	public Diagnostico_Inferido(Diagnostico resultado) {
+	public Diagnostico_Inferido(Diagnostico resultado, String outline) {
 		this.resultados.add(resultado);
+		this.outline = outline;
 	}
 	
 	public Set<Diagnostico> getResultados() {
@@ -19,9 +21,17 @@ public class Diagnostico_Inferido {
 		this.resultados.add(diagnostico);
 	}
 	
-	@Override
-    public String toString() {
-        return "Diagnóstico(s) inferido(s): " + resultados;
-    }
+
+	public String getOutline() {
+		return outline;
+	}
+
+	public void setOutline(String outline) {
+		this.outline = outline;
+	}
+	
+	   public String toString() {
+	        return "Diagnóstico(s) inferido(s): " + resultados + " causa: " + outline;
+	    }
 	
 }

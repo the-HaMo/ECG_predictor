@@ -1,10 +1,10 @@
 package Clases;
 
-public class Analisis_Señal {
+public class Analisis_Senal {
 
 	private int numciclos;
 	private int ritmo_cardiaco;
-	public Analisis_Señal(int numciclos, int ritmo_cardiaco) {
+	public Analisis_Senal(int numciclos, int ritmo_cardiaco) {
 		this.numciclos = numciclos;
 		this.ritmo_cardiaco = ritmo_cardiaco;
 	}

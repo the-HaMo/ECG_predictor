@@ -6,6 +6,7 @@ import java.util.List
 
 
 rule "Detectar Ciclo cardíaco con T"
+agenda-group "inferencia"
 when
     // Ondas secuenciales en orden temporal
     $p: Onda_P($startP: start)
@@ -33,6 +34,7 @@ then
 end
 
 rule "Detectar Ciclo cardíaco sin T"
+agenda-group "inferencia"
 when
     $p: Onda_P($startP: start)
 
@@ -59,7 +61,8 @@ end
 
 // Cálculo de número de ciclos y ritmo cardíaco (Se calcula bien pero no se debe hacer asi) 
 rule "Numero de ciclos y ritmo cardiaco"
- when 
+agenda-group "inferencia"
+when 
  	$listaCiclos : java.util.List() from collect( Ciclo_Cardiaco() )
  	$listaQ : java.util.List() from collect( Onda_Q() )
  	eval( !$listaCiclos.isEmpty() )
@@ -72,12 +75,13 @@ rule "Numero de ciclos y ritmo cardiaco"
  	int duracionTotal = ultimaQ.getStart() - primeraQ.getStart(); 
  	// Fórmula exacta según la práctica 
  	int ritmo_cardiaco = (60000 * numCiclos) / duracionTotal; 
- 	insert(new Analisis_Señal(numCiclos, ritmo_cardiaco)); 
+ 	insert(new Analisis_Senal(numCiclos, ritmo_cardiaco)); 
  	 // System.out.println("Num_cycles : " + numCiclos); 
  	 // System.out.println("Heart_Rate : " + ritmo_cardiaco + " pul/min");
 end
 
 rule "Creacion Complejo_QRS"
+agenda-group "inferencia"
 when
     // Onda Q
     $q: Onda_Q($startQ: start, $endQ: fin, $peakQ: peak)
@@ -103,6 +107,7 @@ end
 
 
 rule "Crear Intervalo QT" 
+agenda-group "inferencia"
 when
     $q: Onda_Q($startQ: start, $endQ: fin)
     $t: Onda_T($startT: start, $endT: fin)
@@ -120,6 +125,7 @@ end
 
 
 rule "Crear Segmento ST"
+agenda-group "inferencia"
 when
     $s: Onda_S($endS: fin, $peakS: peak)
     $t: Onda_T($startT: start, $endT: fin, $peakT: peak)
@@ -135,7 +141,8 @@ then
     // System.out.println("Segmento ST detectado: inicio=" + $endS + "ms, fin=" + $startT + "ms, duración=" + ($startT - $endS) + "ms, amplitud media=" + (($peakT + $peakS) / 2.0));
 end
 
-rule "Crear Intervalo RR" // No es necesario 
+rule "Crear Intervalo RR" // No es necesario pero se deja
+agenda-group "inferencia"
 when
     // Primera onda R
     $r1 : Onda_R($startR1 : start)
@@ -148,33 +155,37 @@ when
     // Evitar duplicados
     not (Intervalo_RR(inicio == $startR1, fin == $startR2))
 then
-    int duracion = $startR2 - $startR1;
     insert(new Intervalo_RR($startR1, $startR2, $startR2 - $startR1));
 end
 
 rule "Detectar Taquicardia"
+agenda-group "diagnosticos"
 when
-    $analisis : Analisis_Señal($ritmo : ritmo_cardiaco)
+    $analisis : Analisis_Senal($ritmo : ritmo_cardiaco)
         eval($ritmo > 100)
 then
-    System.out.println( "Taquicardia detectada: Ritmo cardíaco = " +  $ritmo + " pul/min");
+	String causa = "Taquicardia detectada: Ritmo cardíaco = " +  $ritmo + " pul/min";
+    // System.out.println( "Taquicardia detectada: Ritmo cardíaco = " +  $ritmo + " pul/min");
 
     // Insertamos un objeto de resultado si deseas registrar el diagnóstico
-    insert(new Diagnostico_Inferido(Diagnostico.TAQUICARDIA_SINUSAL));
+    insert(new Diagnostico_Inferido(Diagnostico.TAQUICARDIA_SINUSAL, causa));
 end
 
 rule "Detectar Braquicardia"
+agenda-group "diagnosticos"
 when
-    $analisis : Analisis_Señal($ritmo : ritmo_cardiaco)
+    $analisis : Analisis_Senal($ritmo : ritmo_cardiaco)
         eval($ritmo < 60 )
 then
-     System.out.println( "Braquicardia detectada: Ritmo cardíaco = " + $ritmo + " pul/min");
+	String causa = "Braquicardia detectada: Ritmo cardíaco = " + $ritmo + " pul/min";
+    // System.out.println( "Braquicardia detectada: Ritmo cardíaco = " + $ritmo + " pul/min");
 
     // Insertamos un objeto de resultado si deseas registrar el diagnóstico
-    insert(new Diagnostico_Inferido(Diagnostico.BRADICARDIA_SINUSAL));
+    insert(new Diagnostico_Inferido(Diagnostico.BRADICARDIA_SINUSAL, causa));
 end
 
 rule "Detectar Hipopotasemia"
+agenda-group "diagnosticos"
 when
      $st : Segmento_ST($ampST: amplitud)
      	eval($ampST < -0.5)
@@ -182,12 +193,14 @@ when
      	eval($peakT < -12)
 
      not(Diagnostico_Inferido(resultados contains Diagnostico.HIPOPOTASEMIA))	
-then
-      System.out.println("Hipopotasemia detectada: peak de la onda T =" + $peakT + " y segmento ST =" + $ampST);
-        insert(new Diagnostico_Inferido(Diagnostico.HIPOPOTASEMIA));
+then	
+	 String causa = "Hipopotasemia detectada: peak de la onda T =" + $peakT + " y segmento ST =" + $ampST;
+     // System.out.println("Hipopotasemia detectada: peak de la onda T =" + $peakT + " y segmento ST =" + $ampST);
+        insert(new Diagnostico_Inferido(Diagnostico.HIPOPOTASEMIA, causa));
 end
 
 rule "Detectar Infarto Agudo de Miocardio Temprano"
+agenda-group "diagnosticos"
 when
     $st : Segmento_ST($ampST: amplitud)
         eval($ampST > 0.1)
@@ -198,9 +211,10 @@ when
     // Evita repetir diagnóstico si ya se insertó uno con ese resultado
     not(Diagnostico_Inferido(resultados contains Diagnostico.INFARTO_AGUDO_MIOCARDIO))
 then
-    System.out.println("Infarto Agudo de Miocardio (temprano) detectado: " + "T anormal (peak=" + $peakT + ")");
+	String causa = "Infarto Agudo de Miocardio (temprano) detectado: " + "T anormal (peak=" + $peakT + ")";
+    // System.out.println("Infarto Agudo de Miocardio (temprano) detectado: " + "T anormal (peak=" + $peakT + ")");
 
-    insert(new Diagnostico_Inferido(Diagnostico.INFARTO_AGUDO_MIOCARDIO));
+    insert(new Diagnostico_Inferido(Diagnostico.INFARTO_AGUDO_MIOCARDIO, causa));
 end
 
 
@@ -211,12 +225,14 @@ when
 	
 	not(Diagnostico_Inferido(resultados contains Diagnostico.HIPOCALCEMIA))
 then
-	System.out.println("Hipocalcemia detectada: QT prolongado (" + $duracionQT + " ms)");
-
-    insert(new Diagnostico_Inferido(Diagnostico.HIPOCALCEMIA));
+	String causa = "Hipocalcemia detectada: QT prolongado (" + $duracionQT + " ms)";
+	// System.out.println("Hipocalcemia detectada: QT prolongado (" + $duracionQT + " ms)");
+	
+    insert(new Diagnostico_Inferido(Diagnostico.HIPOCALCEMIA, causa));
 end
 
 rule "Isquemia Coronaria"
+agenda-group "diagnosticos"
 when
     // Onda T individual típica de isquemia
     $t: Onda_T($peak: peak) 
@@ -229,21 +245,25 @@ when
     not(Diagnostico_Inferido(resultados contains Diagnostico.ISQUEMIA_CORONARIA))   
       
 then
-    System.out.println("Isquemia Coronaria detectada: Onda T peak=" + $peak + ", ST amp=" + $amp);
-    insert(new Diagnostico_Inferido(Diagnostico.ISQUEMIA_CORONARIA));
+    // System.out.println("Isquemia Coronaria detectada: Onda T peak=" + $peak + ", ST amp=" + $amp);
+    String causa = "Isquemia Coronaria detectada: Onda T peak=" + $peak + ", ST amp=" + $amp;
+    insert(new Diagnostico_Inferido(Diagnostico.ISQUEMIA_CORONARIA, causa));
 end
 
 rule "Contraccion Ventricular Prematura"
+agenda-group "diagnosticos"
 when
     $qrs: Complejo_QRS($duracion: duracion, $inicioQRS: q.getStart())
         eval($duracion < 90) // Se ajusta a 90 para que no coincida con los casos de prueba de NORMAL
     not(Diagnostico_Inferido(resultados contains Diagnostico.CONTRACCION_VENTRICULAR_PREMATURA))
 then
-    System.out.println("PVC: QRS ancho (" + $duracion + " ms) sin P previa");
-    insert(new Diagnostico_Inferido(Diagnostico.CONTRACCION_VENTRICULAR_PREMATURA));
+    String causa = "PVC: QRS ancho (" + $duracion + " ms) sin P previa";
+    // System.out.println("PVC: QRS ancho (" + $duracion + " ms) sin P previa");
+    insert(new Diagnostico_Inferido(Diagnostico.CONTRACCION_VENTRICULAR_PREMATURA, causa));
 end
 
 rule "Normal"
+agenda-group "diagnosticos"
 when
     not(Diagnostico_Inferido(resultados contains Diagnostico.HIPOPOTASEMIA))
     not(Diagnostico_Inferido(resultados contains Diagnostico.HIPOCALCEMIA))
@@ -253,16 +273,17 @@ when
     not(Diagnostico_Inferido(resultados contains Diagnostico.BRADICARDIA_SINUSAL))
     not(Diagnostico_Inferido(resultados contains Diagnostico.CONTRACCION_VENTRICULAR_PREMATURA))
 then
-    System.out.println("Paciente Sano.");
-    insert(new Diagnostico_Inferido(Diagnostico.SANO));
+	String causa = "No se detecto ninguna patología, paciente puede estar sano"; 
+    // System.out.println("Paciente Sano.");
+    insert(new Diagnostico_Inferido(Diagnostico.SANO, causa));
 end
 
 
 rule "Report - Mostrar Diagnóstico"
 agenda-group "report"
 when
-    $d : Diagnostico_Inferido($res : resultados)
+    $d : Diagnostico_Inferido()
 then
-    System.out.println(">> Diagnóstico detectado: " + $res);
+    System.out.println($d.toString());
 end
 
