@@ -1,4 +1,5 @@
 package Main;
+
 import Clases.*;
 import Parser.InputParser;
 import Parser.OutputParser;
@@ -10,10 +11,10 @@ import org.kie.api.runtime.KieContainer;
 import org.kie.api.runtime.KieSession;
 
 public class LectorFicheroPrueba {
-	
-	public static void main(String[] args) throws Exception {
-	    
-		String dirEnt = "C:\\Users\\Usuario\\OneDrive\\Escritorio\\DSIN\\Electrocardiograma\\ECG_predictor\\inputs";
+    
+    public static void main(String[] args) throws Exception {
+        
+        String dirEnt = "C:\\Users\\Usuario\\OneDrive\\Escritorio\\DSIN\\Electrocardiograma\\ECG_predictor\\inputs";
         String dirSal = "C:\\Users\\Usuario\\OneDrive\\Escritorio\\DSIN\\Electrocardiograma\\ECG_predictor\\salida";
 
         try {
@@ -24,53 +25,79 @@ public class LectorFicheroPrueba {
             // Si hay argumentos, reescribir valores
             if (args.length >= 1) dirEnt = args[0];
             if (args.length >= 2) dirSal = args[1];
-            	
-           
+            
             File inputDir = new File(dirEnt);
             File[] archivos = inputDir.listFiles((d, name) -> name.endsWith(".ecg"));
             
+            // Crear directorio de salida
             new File(dirSal).mkdirs();
+            
+            // Mapa para archivo consolidado
             Map<String, List<Diagnostico_Inferido>> todosLosResultados = new LinkedHashMap<>();
             
             if (archivos == null || archivos.length == 0) {
-                System.out.println("No se encontraron archivos .ecg");
+                System.out.println("No se encontraron archivos .ecg en: " + dirEnt);
                 return;
             }
 
+            System.out.println("PROCESANDO " + archivos.length + " ARCHIVOS ECG");
+
+            // Procesar cada archivo
             for (File file : archivos) {
-                System.out.println("=== Procesando: " + file.getName() + " ===");
+                System.out.println("Procesando: " + file.getName());
                 
                 // Crear NUEVA sesión para CADA archivo
                 KieSession kSession = kcontainer.newKieSession("ksession-Rules-dsi");
-                List<Onda> ondas = InputParser.parseFile(file);
-                System.out.println("Ondas encontradas: " + ondas.size());
                 
+                // Parsear ondas
+                List<Onda> ondas = InputParser.parseFile(file);
+                System.out.println("  Ondas encontradas: " + ondas.size());
+                
+                // Insertar ondas en la sesión
                 for (Onda onda : ondas) {
                     kSession.insert(onda);
                 }
-                // Ejecutar reglas
-                // System.out.println("Ejecutando reglas Drools...(Solo Imprime Ondas)");
-                // kSession.getAgenda().getAgendaGroup("diagnostico").setFocus();
-                // kSession.getAgenda().getAgendaGroup("report").setFocus();
-                int ejec = kSession.fireAllRules();
-                System.out.println("Reglas ejecutadas: " + ejec);
                 
+                // Ejecutar reglas
+                int ejec = kSession.fireAllRules();
+                System.out.println("  Reglas ejecutadas: " + ejec);
+                
+                // Recolectar diagnósticos Y análisis de señal
                 List<Diagnostico_Inferido> diagnosticos = new ArrayList<>();
+                Analisis_Señal analisisSenal = null;  // SIN EÑES
                 
                 for (Object obj : kSession.getObjects()) {
                     if (obj instanceof Diagnostico_Inferido) {
                         diagnosticos.add((Diagnostico_Inferido) obj);
+                    } else if (obj instanceof Analisis_Señal) {  // SIN EÑES
+                        analisisSenal = (Analisis_Señal) obj;
                     }
                 }
+                
+                // Nombre del fichero sin extensión
                 String nombreFichero = file.getName().replace(".ecg", "");
+                
+                // Guardar para archivo consolidado
                 todosLosResultados.put(nombreFichero, diagnosticos);
                 
-                // Limpiar para el próximo archivo
+                // **GENERAR ARCHIVO INDIVIDUAL**
+                OutputParser.escribirSalidaIndividual(
+                    nombreFichero, 
+                    diagnosticos, 
+                    analisisSenal, 
+                    dirSal
+                );
+                System.out.println("Archivo generado: " + nombreFichero + ".salida.txt");
+                
+                // Limpiar sesión
                 kSession.dispose();
+                System.out.println();
             }
-            System.out.println("\n=== GENERANDO ARCHIVO DE RESULTADOS ===");
-            OutputParser.escribirSalidaUnica(todosLosResultados, dirSal, "resultados.txt");
-            System.out.println("Archivo generado: " + dirSal + "\\resultados.txt");
+            
+            // **GENERAR ARCHIVO CONSOLIDADO**
+            System.out.println("GENERANDO ARCHIVO CONSOLIDADO");
+            OutputParser.escribirSalidaUnica(todosLosResultados, dirSal, "todo.salida.txt");
+            System.out.println("Archivo consolidado generado: todo.salida.txt\n");
             
         } catch (Exception e) {
             e.printStackTrace();

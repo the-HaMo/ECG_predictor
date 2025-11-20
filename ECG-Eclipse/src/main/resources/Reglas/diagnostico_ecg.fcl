@@ -1,0 +1,480 @@
+// 1. ANÁLISIS DE RITMO CARDÍACO
+// Detecta Taquicardia y Bradicardia con gradación de severidad
+
+	FUNCTION_BLOCK Analisis_Ritmo_Cardiaco
+
+VAR_INPUT
+    ritmo : REAL;  // Pulsaciones por minuto
+END_VAR
+
+VAR_OUTPUT
+    nivel_bradicardia : REAL;
+    nivel_taquicardia : REAL;
+    estado_salud_ritmo : REAL;
+END_VAR
+
+// Fuzzificación del ritmo cardíaco
+FUZZIFY ritmo
+    TERM bradicardia_severa := (30, 1) (40, 1) (48, 0);
+    TERM bradicardia_moderada := (44, 0) (50, 1) (56, 0);
+    TERM bradicardia_leve := (54, 0) (57, 1) (60, 0);
+    TERM normal := (58, 0) (70, 1) (95, 1) (102, 0);
+    TERM taquicardia_leve := (100, 0) (105, 1) (112, 0);
+    TERM taquicardia_moderada := (108, 0) (120, 1) (135, 0);
+    TERM taquicardia_severa := (130, 0) (150, 1) (180, 1);
+END_FUZZIFY
+
+// Defuzzificación: nivel de bradicardia
+DEFUZZIFY nivel_bradicardia
+    TERM ausente := (0, 1) (0.1, 0);
+    TERM leve := (0.05, 0) (0.3, 1) (0.45, 0);
+    TERM moderada := (0.4, 0) (0.6, 1) (0.75, 0);
+    TERM severa := (0.7, 0) (0.9, 1) (1, 1);
+    METHOD : COG;
+    DEFAULT := 0;
+END_DEFUZZIFY
+
+// Defuzzificación: nivel de taquicardia
+DEFUZZIFY nivel_taquicardia
+    TERM ausente := (0, 1) (0.1, 0);
+    TERM leve := (0.05, 0) (0.3, 1) (0.45, 0);
+    TERM moderada := (0.4, 0) (0.6, 1) (0.75, 0);
+    TERM severa := (0.7, 0) (0.9, 1) (1, 1);
+    METHOD : COG;
+    DEFAULT := 0;
+END_DEFUZZIFY
+
+// Defuzzificación: estado general de salud del ritmo
+DEFUZZIFY estado_salud_ritmo
+    TERM sano := (0, 1) (0.15, 0);
+    TERM atencion := (0.1, 0) (0.35, 1) (0.6, 0);
+    TERM patologico := (0.55, 0) (0.8, 1) (1, 1);
+    METHOD : COG;
+    DEFAULT := 0;
+END_DEFUZZIFY
+
+// Reglas
+RULEBLOCK reglas_ritmo
+    AND : MIN;
+    OR : MAX;
+    ACT : MIN;
+    ACCU : MAX;
+
+    // Bradicardia
+    RULE 1 : IF ritmo IS bradicardia_severa
+             THEN nivel_bradicardia IS severa, estado_salud_ritmo IS patologico;
+    
+    RULE 2 : IF ritmo IS bradicardia_moderada
+             THEN nivel_bradicardia IS moderada, estado_salud_ritmo IS patologico;
+    
+    RULE 3 : IF ritmo IS bradicardia_leve
+             THEN nivel_bradicardia IS leve, estado_salud_ritmo IS atencion;
+    
+    // Taquicardia
+    RULE 4 : IF ritmo IS taquicardia_severa
+             THEN nivel_taquicardia IS severa, estado_salud_ritmo IS patologico;
+    
+    RULE 5 : IF ritmo IS taquicardia_moderada
+             THEN nivel_taquicardia IS moderada, estado_salud_ritmo IS patologico;
+    
+    RULE 6 : IF ritmo IS taquicardia_leve
+             THEN nivel_taquicardia IS leve, estado_salud_ritmo IS atencion;
+    
+    // Normal
+    RULE 7 : IF ritmo IS normal
+             THEN nivel_bradicardia IS ausente, nivel_taquicardia IS ausente, estado_salud_ritmo IS sano;
+END_RULEBLOCK
+
+END_FUNCTION_BLOCK
+
+
+// 2. ISQUEMIA CORONARIA
+// Basado en inversión de onda T y descenso del segmento ST
+
+FUNCTION_BLOCK ECG_Isquemia
+
+VAR_INPUT
+    tpeak : REAL;        // Peak de la onda T (en mV)
+    stamp : REAL;        // Amplitud del segmento ST (en mV)
+    duracion_st : REAL;  // Duración del segmento ST (en ms)
+END_VAR
+
+VAR_OUTPUT
+    riesgo_isquemia : REAL;
+END_VAR
+
+// Fuzzificación del peak de onda T
+FUZZIFY tpeak
+    TERM normal := (-2, 0) (0, 1) (2, 0);
+    TERM ligeramente_invertida := (-6, 0) (-4, 1) (-2, 0);
+    TERM moderadamente_invertida := (-10, 0) (-7, 1) (-4, 0);
+    TERM invertida := (-12, 0) (-8, 1) (-5, 0);
+    TERM muy_invertida := (-20, 0) (-15, 1) (-12, 0);
+END_FUZZIFY
+
+// Fuzzificación de la amplitud del segmento ST
+FUZZIFY stamp
+    TERM muy_elevado := (0.8, 0) (1.5, 1) (3, 1);
+    TERM elevado := (0.3, 0) (0.6, 1) (1.0, 0);
+    TERM ligeramente_elevado := (0.05, 0) (0.2, 1) (0.4, 0);
+    TERM normal := (-0.5, 0) (0, 1) (0.1, 0);
+    TERM ligeramente_descendido := (-2, 0) (-1, 1) (-0.5, 0);
+    TERM descendido := (-6, 0) (-3, 1) (-1, 0);
+    TERM muy_descendido := (-10, 0) (-6, 1) (-3, 0);
+END_FUZZIFY
+
+// Fuzzificación de la duración del segmento ST
+FUZZIFY duracion_st
+    TERM corta := (30, 1) (50, 1) (70, 0);
+    TERM normal := (60, 0) (80, 1) (120, 1) (150, 0);
+    TERM prolongada := (140, 0) (180, 1) (250, 1);
+END_FUZZIFY
+
+// Defuzzificación del riesgo de isquemia
+DEFUZZIFY riesgo_isquemia
+    TERM muy_bajo := (0, 1) (0.15, 0);
+    TERM bajo := (0.1, 0) (0.3, 1) (0.4, 0);
+    TERM medio := (0.35, 0) (0.5, 1) (0.65, 0);
+    TERM alto := (0.6, 0) (0.8, 1) (0.9, 0);
+    TERM muy_alto := (0.85, 0) (1, 1);
+    METHOD : COG;
+    DEFAULT := 0;
+END_DEFUZZIFY
+
+// Reglas
+RULEBLOCK reglas_isquemia
+    AND : MIN;
+    OR : MAX;
+    ACT : MIN;
+    ACCU : MAX;
+
+    // Riesgo muy alto
+    RULE 1 : IF tpeak IS invertida AND stamp IS muy_descendido
+             THEN riesgo_isquemia IS muy_alto;
+    
+    RULE 2 : IF tpeak IS muy_invertida AND stamp IS descendido
+             THEN riesgo_isquemia IS muy_alto;
+    
+    RULE 3 : IF tpeak IS moderadamente_invertida AND stamp IS descendido AND duracion_st IS prolongada
+             THEN riesgo_isquemia IS alto;
+    
+    // Riesgo medio
+    RULE 4 : IF tpeak IS invertida AND stamp IS normal
+             THEN riesgo_isquemia IS medio;
+    
+    RULE 5 : IF tpeak IS ligeramente_invertida AND stamp IS descendido
+             THEN riesgo_isquemia IS medio;
+    
+    RULE 6 : IF tpeak IS moderadamente_invertida AND stamp IS ligeramente_descendido
+             THEN riesgo_isquemia IS medio;
+    
+    // Riesgo bajo
+    RULE 7 : IF tpeak IS normal AND stamp IS descendido
+             THEN riesgo_isquemia IS bajo;
+    
+    RULE 8 : IF tpeak IS ligeramente_invertida AND stamp IS normal
+             THEN riesgo_isquemia IS bajo;
+    
+    // Normal
+    RULE 9 : IF tpeak IS normal AND stamp IS normal
+             THEN riesgo_isquemia IS muy_bajo;
+END_RULEBLOCK
+
+END_FUNCTION_BLOCK
+
+
+// 3. HIPOPOTASEMIA
+// Diferenciación con isquemia: T MUY invertida
+
+FUNCTION_BLOCK ECG_Hipopotasemia
+
+VAR_INPUT
+    tpeak : REAL;  // Peak de la onda T (en mV)
+    stamp : REAL;  // Amplitud del segmento ST (en mV)
+END_VAR
+
+VAR_OUTPUT
+    probabilidad_hipopotasemia : REAL;
+END_VAR
+
+// Fuzzificación del peak de onda T
+FUZZIFY tpeak
+    TERM normal := (-5, 0) (0, 1) (2, 0);
+    TERM moderadamente_invertida := (-12, 0) (-8, 1) (-5, 0);
+    TERM muy_invertida := (-20, 0) (-15, 1) (-12, 0);
+    TERM extremadamente_invertida := (-30, 0) (-20, 1);
+END_FUZZIFY
+
+// Fuzzificación de la amplitud del segmento ST
+FUZZIFY stamp
+    TERM normal := (-1, 0) (0, 1) (0.5, 0);
+    TERM ligeramente_descendido := (-3, 0) (-1.5, 1) (-0.5, 0);
+    TERM descendido := (-8, 0) (-4, 1) (-1, 0);
+    TERM muy_descendido := (-15, 0) (-8, 1) (-4, 0);
+END_FUZZIFY
+
+// Defuzzificación de la probabilidad de hipopotasemia
+DEFUZZIFY probabilidad_hipopotasemia
+    TERM muy_baja := (0, 1) (0.2, 0);
+    TERM baja := (0.15, 0) (0.35, 1) (0.5, 0);
+    TERM media := (0.45, 0) (0.6, 1) (0.75, 0);
+    TERM alta := (0.7, 0) (0.85, 1) (0.95, 0);
+    TERM muy_alta := (0.9, 0) (1, 1);
+    METHOD : COG;
+    DEFAULT := 0;
+END_DEFUZZIFY
+
+// Reglas
+RULEBLOCK reglas_hipopotasemia
+    AND : MIN;
+    OR : MAX;
+    ACT : MIN;
+    ACCU : MAX;
+
+    // Hipopotasemia típica: T MUY invertida
+    RULE 1 : IF tpeak IS extremadamente_invertida AND stamp IS muy_descendido
+             THEN probabilidad_hipopotasemia IS muy_alta;
+    
+    RULE 2 : IF tpeak IS muy_invertida AND stamp IS descendido
+             THEN probabilidad_hipopotasemia IS muy_alta;
+    
+    RULE 3 : IF tpeak IS muy_invertida AND stamp IS ligeramente_descendido
+             THEN probabilidad_hipopotasemia IS alta;
+    
+    RULE 4 : IF tpeak IS extremadamente_invertida AND stamp IS normal
+             THEN probabilidad_hipopotasemia IS alta;
+    
+    // Zona gris con isquemia
+    RULE 5 : IF tpeak IS moderadamente_invertida AND stamp IS descendido
+             THEN probabilidad_hipopotasemia IS media;
+    
+    RULE 6 : IF tpeak IS moderadamente_invertida AND stamp IS muy_descendido
+             THEN probabilidad_hipopotasemia IS media;
+    
+    // Descartada
+    RULE 7 : IF tpeak IS normal OR stamp IS normal
+             THEN probabilidad_hipopotasemia IS muy_baja;
+    
+    RULE 8 : IF tpeak IS moderadamente_invertida AND stamp IS normal
+             THEN probabilidad_hipopotasemia IS baja;
+END_RULEBLOCK
+
+END_FUNCTION_BLOCK
+
+
+
+// 4. INFARTO AGUDO DE MIOCARDIO
+// Basado en elevación del segmento ST
+
+FUNCTION_BLOCK ECG_Infarto
+
+VAR_INPUT
+    stamp : REAL;  // Elevación del segmento ST (en mV)
+    tpeak : REAL;  // Peak de onda T (en mV)
+END_VAR
+
+VAR_OUTPUT
+    riesgo_infarto : REAL;
+END_VAR
+
+// Fuzzificación del segmento ST
+FUZZIFY stamp
+    TERM normal := (-0.5, 0) (0, 1) (0.1, 0);
+    TERM ligeramente_elevado := (0.05, 0) (0.2, 1) (0.4, 0);
+    TERM elevado := (0.3, 0) (0.6, 1) (1.0, 0);
+    TERM muy_elevado := (0.8, 0) (1.5, 1) (3, 1);
+END_FUZZIFY
+
+// Fuzzificación del peak de onda T
+FUZZIFY tpeak
+    TERM invertida := (-10, 0) (-5, 1) (0, 0);
+    TERM normal := (-2, 0) (0, 1) (2, 0);
+    TERM ligeramente_elevada := (1.5, 0) (3, 1) (5, 0);
+    TERM elevada := (4, 0) (7, 1) (10, 0);
+    TERM muy_elevada := (8, 0) (12, 1) (20, 1);
+END_FUZZIFY
+
+// Defuzzificación del riesgo de infarto
+DEFUZZIFY riesgo_infarto
+    TERM muy_bajo := (0, 1) (0.15, 0);
+    TERM bajo := (0.1, 0) (0.3, 1) (0.45, 0);
+    TERM medio := (0.4, 0) (0.6, 1) (0.75, 0);
+    TERM alto := (0.7, 0) (0.85, 1) (0.95, 0);
+    TERM muy_alto := (0.9, 0) (1, 1);
+    METHOD : COG;
+    DEFAULT := 0;
+END_DEFUZZIFY
+
+// Reglas
+RULEBLOCK reglas_infarto
+    AND : MIN;
+    OR : MAX;
+    ACT : MIN;
+    ACCU : MAX;
+
+    // Infarto agudo: ST muy elevado
+    RULE 1 : IF stamp IS muy_elevado AND tpeak IS muy_elevada
+             THEN riesgo_infarto IS muy_alto;
+    
+    RULE 2 : IF stamp IS muy_elevado AND tpeak IS elevada
+             THEN riesgo_infarto IS muy_alto;
+    
+    RULE 3 : IF stamp IS muy_elevado AND tpeak IS normal
+             THEN riesgo_infarto IS alto;
+    
+    RULE 4 : IF stamp IS elevado AND tpeak IS elevada
+             THEN riesgo_infarto IS alto;
+    
+    RULE 5 : IF stamp IS elevado AND tpeak IS normal
+             THEN riesgo_infarto IS medio;
+    
+    RULE 6 : IF stamp IS ligeramente_elevado AND tpeak IS elevada
+             THEN riesgo_infarto IS medio;
+    
+    RULE 7 : IF stamp IS ligeramente_elevado AND tpeak IS normal
+             THEN riesgo_infarto IS bajo;
+    
+    RULE 8 : IF stamp IS normal
+             THEN riesgo_infarto IS muy_bajo;
+    
+    // Excluir si T invertida (más probable isquemia)
+    RULE 9 : IF tpeak IS invertida
+             THEN riesgo_infarto IS muy_bajo;
+END_RULEBLOCK
+
+END_FUNCTION_BLOCK
+
+
+
+// 5. HIPOCALCEMIA
+// Basado en prolongación del intervalo QT
+
+FUNCTION_BLOCK ECG_Hipocalcemia
+
+VAR_INPUT
+    duracion_qt : REAL;  // Duración del intervalo QT (en ms)
+END_VAR
+
+VAR_OUTPUT
+    probabilidad_hipocalcemia : REAL;
+END_VAR
+
+// Fuzzificación de la duración QT
+FUZZIFY duracion_qt
+    TERM corto := (300, 1) (350, 1) (380, 0);
+    TERM normal := (360, 0) (400, 1) (430, 1) (450, 0);
+    TERM ligeramente_prolongado := (440, 0) (460, 1) (480, 0);
+    TERM prolongado := (470, 0) (500, 1) (530, 0);
+    TERM muy_prolongado := (520, 0) (550, 1) (600, 1);
+END_FUZZIFY
+
+// Defuzzificación de la probabilidad de hipocalcemia
+DEFUZZIFY probabilidad_hipocalcemia
+    TERM muy_baja := (0, 1) (0.2, 0);
+    TERM baja := (0.15, 0) (0.35, 1) (0.5, 0);
+    TERM media := (0.45, 0) (0.65, 1) (0.8, 0);
+    TERM alta := (0.75, 0) (0.9, 1) (0.98, 0);
+    TERM muy_alta := (0.95, 0) (1, 1);
+    METHOD : COG;
+    DEFAULT := 0;
+END_DEFUZZIFY
+
+// Reglas
+RULEBLOCK reglas_hipocalcemia
+    AND : MIN;
+    ACT : MIN;
+    ACCU : MAX;
+
+    RULE 1 : IF duracion_qt IS muy_prolongado
+             THEN probabilidad_hipocalcemia IS muy_alta;
+    
+    RULE 2 : IF duracion_qt IS prolongado
+             THEN probabilidad_hipocalcemia IS alta;
+    
+    RULE 3 : IF duracion_qt IS ligeramente_prolongado
+             THEN probabilidad_hipocalcemia IS media;
+    
+    RULE 4 : IF duracion_qt IS normal
+             THEN probabilidad_hipocalcemia IS muy_baja;
+    
+    RULE 5 : IF duracion_qt IS corto
+             THEN probabilidad_hipocalcemia IS muy_baja;
+END_RULEBLOCK
+
+END_FUNCTION_BLOCK
+
+
+// 6. CONTRACCIÓN VENTRICULAR PREMATURA (PVC)
+// CRITERIO PROFESOR: QRS < 90 ms (contracciones prematuras/cortas)
+
+FUNCTION_BLOCK ECG_PVC
+
+VAR_INPUT
+    duracion_qrs : REAL;  // Duración del complejo QRS (en ms)
+    ausencia_p : REAL;    // 1.0 = no hay P previa, 0.0 = hay P previa
+END_VAR
+
+VAR_OUTPUT
+    probabilidad_pvc : REAL;
+END_VAR
+
+// Fuzzificación de la duración del QRS (CORTO = PVC)
+FUZZIFY duracion_qrs
+    TERM muy_corto := (20, 1) (40, 1) (50, 0);
+    TERM corto := (45, 0) (60, 1) (75, 0);
+    TERM limite_pvc := (70, 0) (80, 1) (90, 0);
+    TERM normal := (85, 0) (100, 1) (120, 0);
+    TERM ancho := (115, 0) (150, 1) (200, 1);
+END_FUZZIFY
+
+// Fuzzificación de la ausencia de onda P
+FUZZIFY ausencia_p
+    TERM presente := (0, 1) (0.3, 0);
+    TERM dudosa := (0.2, 0) (0.5, 1) (0.8, 0);
+    TERM ausente := (0.7, 0) (1, 1);
+END_FUZZIFY
+
+// Defuzzificación de la probabilidad de PVC
+DEFUZZIFY probabilidad_pvc
+    TERM muy_baja := (0, 1) (0.2, 0);
+    TERM baja := (0.15, 0) (0.35, 1) (0.5, 0);
+    TERM media := (0.45, 0) (0.65, 1) (0.75, 0);
+    TERM alta := (0.7, 0) (0.85, 1) (0.95, 0);
+    TERM muy_alta := (0.9, 0) (1, 1);
+    METHOD : COG;
+    DEFAULT := 0;
+END_DEFUZZIFY
+
+// Reglas (QRS < 90 ms = PVC)
+RULEBLOCK reglas_pvc
+    AND : MIN;
+    OR : MAX;
+    ACT : MIN;
+    ACCU : MAX;
+
+    // PVC típica: QRS muy corto
+    RULE 1 : IF duracion_qrs IS muy_corto
+             THEN probabilidad_pvc IS muy_alta;
+    
+    RULE 2 : IF duracion_qrs IS corto
+             THEN probabilidad_pvc IS muy_alta;
+    
+    RULE 3 : IF duracion_qrs IS limite_pvc
+             THEN probabilidad_pvc IS alta;
+    
+    // Aumentar si falta P
+    RULE 4 : IF duracion_qrs IS muy_corto AND ausencia_p IS ausente
+             THEN probabilidad_pvc IS muy_alta;
+    
+    RULE 5 : IF duracion_qrs IS corto AND ausencia_p IS ausente
+             THEN probabilidad_pvc IS muy_alta;
+    
+    // QRS normal o ancho: no PVC
+    RULE 6 : IF duracion_qrs IS normal
+             THEN probabilidad_pvc IS muy_baja;
+    
+    RULE 7 : IF duracion_qrs IS ancho
+             THEN probabilidad_pvc IS muy_baja;
+END_RULEBLOCK
+
+END_FUNCTION_BLOCK
