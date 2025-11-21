@@ -59,26 +59,37 @@ then
 end
 
 
-// Cálculo de número de ciclos y ritmo cardíaco (Se calcula bien pero no se debe hacer asi) 
 rule "Numero de ciclos y ritmo cardiaco"
 agenda-group "inferencia"
-when 
- 	$listaCiclos : java.util.List() from collect( Ciclo_Cardiaco() )
- 	$listaQ : java.util.List() from collect( Onda_Q() )
- 	eval( !$listaCiclos.isEmpty() )
- 	eval( !$listaQ.isEmpty() )
- then 
- 	int numCiclos = $listaCiclos.size(); 
- 	// Tomamos la primera(ultima insertada) y última (primera insertada) Q 
- 	Onda_Q ultimaQ = (Onda_Q) $listaQ.get(0);
- 	Onda_Q primeraQ = (Onda_Q) $listaQ.get($listaQ.size() - 1);
- 	int duracionTotal = ultimaQ.getStart() - primeraQ.getStart(); 
- 	// Fórmula exacta según la práctica 
- 	int ritmo_cardiaco = (60000 * numCiclos) / duracionTotal; 
- 	insert(new Analisis_Senal(numCiclos, ritmo_cardiaco)); 
- 	 // System.out.println("Num_cycles : " + numCiclos); 
- 	 // System.out.println("Heart_Rate : " + ritmo_cardiaco + " pul/min");
+when
+    // Numero de ciclos
+    $numCiclos : Number(intValue > 0)
+        from accumulate(
+            Ciclo_Cardiaco(), count(1)
+        )
+
+    // Valor mínimo de start entre las Q
+    $minQStart : Number()
+        from accumulate(
+            Onda_Q( $s : start ),
+            min($s)
+        )
+
+    // Valor máximo de start entre las Q
+    $maxQStart : Number()
+        from accumulate(
+            Onda_Q( $s : start ),
+            max($s)
+        )
+then
+    int duracion = $maxQStart.intValue() - $minQStart.intValue();
+    int ritmo = (60000 * $numCiclos.intValue()) / duracion;
+    // System.out.println("Num_cycles : " + $numCiclos); 
+    // System.out.println("Heart_Rate : " + ritmo + " pul/min");
+
+    insert(new Analisis_Senal($numCiclos.intValue(), ritmo));
 end
+
 
 rule "Creacion Complejo_QRS"
 agenda-group "inferencia"
@@ -113,8 +124,6 @@ when
     $t: Onda_T($startT: start, $endT: fin)
         eval($startT > $endQ)
         not(Onda_T(start > $endQ && start < $startT))
-    // Duración fisiológica típica del QT < 600 ms
-    eval(($endT - $startQ) < 600)
     // Evitar duplicados
     not(Intervalo_QT(inicio == $startQ, fin == $endT))
 then
@@ -132,8 +141,6 @@ when
         eval($startT > $endS)
         // Garantizar que sea la PRIMERA T tras la S
         not(Onda_T(start > $endS && start < $startT))
-    // Verificar que pertenecen al mismo ciclo cardíaco
-    eval($startT - $endS < 300)
     // Evitar duplicados
     not(Segmento_ST(inicio == $endS, fin == $startT))
 then
@@ -257,7 +264,7 @@ when
         eval($duracion < 90) // Se ajusta a 90 para que no coincida con los casos de prueba de NORMAL
     not(Diagnostico_Inferido(resultados contains Diagnostico.CONTRACCION_VENTRICULAR_PREMATURA))
 then
-    String causa = "PVC: QRS ancho (" + $duracion + " ms) sin P previa";
+    String causa = "PVC: QRS ancho (" + $duracion + " ms) menor que la cota";
     // System.out.println("PVC: QRS ancho (" + $duracion + " ms) sin P previa");
     insert(new Diagnostico_Inferido(Diagnostico.CONTRACCION_VENTRICULAR_PREMATURA, causa));
 end
