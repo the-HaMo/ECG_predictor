@@ -108,10 +108,18 @@ public class AnalizadorECG_Fuzzy {
                         bw.write("- Nivel taquicardia: " + String.format("%.3f", nivelTaqui) + "\n");
                         bw.write("- Estado salud ritmo: " + String.format("%.3f", estadoSalud) + "\n\n");
                         
-                        String diagnostico = AuxilarFuzzy.interpretarRitmo(nivelBradi, nivelTaqui, estadoSalud);
-                        
                         if (estadoSalud >= 0.15) {
                             enfermedadDetectada = true;
+                            
+                            String diagnostico;
+                            if (nivelBradi > nivelTaqui) {
+                                String severidad = interpretarSeveridad(nivelBradi);
+                                diagnostico = "BRADICARDIA " + severidad;
+                            } else {
+                                String severidad = interpretarSeveridad(nivelTaqui);
+                                diagnostico = "TAQUICARDIA " + severidad;
+                            }
+                            
                             diagnosticosPositivos.add(diagnostico);
                             
                             bw.write("Interpretacion:\n");
@@ -149,7 +157,7 @@ public class AnalizadorECG_Fuzzy {
                     System.out.println("\nISQUEMIA: Analizando ciclos completos...");
                     
                     boolean isquemiaDetectada = false;
-                    FunctionBlock fbIsq = fis.getFunctionBlock("ECG_Isquemia");
+                    FunctionBlock fbIsq = fis.getFunctionBlock("ECG_Isquemia_Coronaria");
                     
                     if (fbIsq != null) {
                         
@@ -157,33 +165,42 @@ public class AnalizadorECG_Fuzzy {
                             CicloECG ciclo = ciclos.get(i);
                             double stamp = AuxilarFuzzy.calcularAmplitudST(ciclo);
                             double duracionST = ciclo.t.getStart() - ciclo.s.getFin();
+                            double tpeak = ciclo.t.getPeak();
                             
-                            fbIsq.setVariable("tpeak", ciclo.t.getPeak());
-                            fbIsq.setVariable("stamp", stamp);
-                            fbIsq.setVariable("duracion_st", duracionST);
-                            fbIsq.evaluate();
-                            
-                            double riesgo = fbIsq.getVariable("riesgo_isquemia").getValue();
-                            
-                            if (riesgo >= 0.6 && !isquemiaDetectada) {
-                                isquemiaDetectada = true;
-                                enfermedadDetectada = true;
-                                diagnosticosPositivos.add("ISQUEMIA CORONARIA");
+                            if (tpeak > -12 && tpeak < -5 && stamp > -6 && stamp < -1) {
                                 
-                                bw.write("Resultados por ciclo:\n");
-                                bw.write("Ciclo " + (i+1) + ": T peak=" + String.format("%.2f", ciclo.t.getPeak()) + 
-                                        " mV, ST=" + String.format("%.2f", stamp) + " mV, Duracion ST=" + 
-                                        String.format("%.0f", duracionST) + " ms\n");
-                                bw.write("               Riesgo isquemia: " + String.format("%.3f", riesgo) + "\n");
+                                fbIsq.setVariable("tpeak", tpeak);
+                                fbIsq.setVariable("stamp", stamp);
+                                fbIsq.setVariable("duracion_st", duracionST);
+                                fbIsq.evaluate();
                                 
-                                bw.write("\nInterpretacion:\n");
-                                bw.write("Se detecta inversion de onda T y descenso relevante de ST en ciclo " + (i+1) + ".\n");
-                                bw.write("El riesgo fuzzy de isquemia es alto.\n\n");
-                                bw.write("DIAGNOSTICO: ISQUEMIA CORONARIA DETECTADA\n");
-                                bw.write("Justificacion: T_peak=" + String.format("%.2f", ciclo.t.getPeak()) + " mV, ST_amp=" + String.format("%.2f", stamp) + " mV, Riesgo=" + String.format("%.3f", riesgo) + " (>=0.6)\n\n");
+                                double riesgo = fbIsq.getVariable("riesgo_isquemia_coronaria").getValue();
                                 
-                                JFuzzyChart.get().chart(fbIsq.getVariable("riesgo_isquemia_coronaria"), 
-                                                        fbIsq.getVariable("riesgo_isquemia_coronaria").getDefuzzifier(), true);
+                                if (riesgo >= 0.3 && !isquemiaDetectada) {
+                                    isquemiaDetectada = true;
+                                    enfermedadDetectada = true;
+                                    
+                                    String severidad = interpretarSeveridad(riesgo);
+                                    String diagnostico = "ISQUEMIA CORONARIA " + severidad;
+                                    diagnosticosPositivos.add(diagnostico);
+                                    
+                                    bw.write("Resultados por ciclo:\n");
+                                    bw.write("Ciclo " + (i+1) + ": T peak=" + String.format("%.2f", tpeak) + 
+                                            " mV, ST=" + String.format("%.2f", stamp) + " mV, Duracion ST=" + 
+                                            String.format("%.0f", duracionST) + " ms\n");
+                                    bw.write("               Riesgo isquemia: " + String.format("%.3f", riesgo) + "\n");
+                                    
+                                    bw.write("\nInterpretacion:\n");
+                                    bw.write("Se detecta inversion de onda T y descenso relevante de ST en ciclo " + (i+1) + ".\n");
+                                    bw.write("El riesgo fuzzy de isquemia es " + severidad.toLowerCase() + ".\n\n");
+                                    bw.write("DIAGNOSTICO: " + diagnostico + "\n");
+                                    bw.write("Justificacion: T_peak=" + String.format("%.2f", tpeak) + " mV (entre -12 y -5), ST_amp=" + String.format("%.2f", stamp) + " mV (entre -6 y -1), Riesgo=" + String.format("%.3f", riesgo) + "\n\n");
+                                    
+                                    System.out.println("DETECTADO: " + diagnostico);
+                                    
+                                    JFuzzyChart.get().chart(fbIsq.getVariable("riesgo_isquemia_coronaria"), 
+                                                            fbIsq.getVariable("riesgo_isquemia_coronaria").getDefuzzifier(), true);
+                                }
                             }
                         }
                         
@@ -200,42 +217,48 @@ public class AnalizadorECG_Fuzzy {
                 
                 //ANALIZAR HIPOPOTASEMIA
                 bw.write("3. ANALISIS DE HIPOPOTASEMIA\n");
-                bw.write("Se busca onda T muy invertida (< -10 mV) acompanada de ST muy descendido,\n");
+                bw.write("Se busca onda T muy invertida (< -12 mV) acompanada de ST muy descendido (< -0.5 mV),\n");
                 bw.write("patron tipico en hipopotasemia.\n\n");
                 
                 if (!ciclos.isEmpty()) {
                     boolean hipopotasemiaDetectada = false;
-                    boolean ciclosEvaluados = false;
                     FunctionBlock fbHipo = fis.getFunctionBlock("ECG_Hipopotasemia");
                     
                     if (fbHipo != null) {
                         for (int i = 0; i < ciclos.size(); i++) {
                             CicloECG ciclo = ciclos.get(i);
+                            double stamp = AuxilarFuzzy.calcularAmplitudST(ciclo);
+                            double tpeak = ciclo.t.getPeak();
                             
-                            if (ciclo.t.getPeak() < -10) {
-                                ciclosEvaluados = true;
-                                double stamp = AuxilarFuzzy.calcularAmplitudST(ciclo);
-                                fbHipo.setVariable("tpeak", ciclo.t.getPeak());
+                           
+                            if (tpeak < -12 && stamp < -0.5) {
+                                
+                                fbHipo.setVariable("tpeak", tpeak);
                                 fbHipo.setVariable("stamp", stamp);
                                 fbHipo.evaluate();
                                 
                                 double prob = fbHipo.getVariable("probabilidad_hipopotasemia").getValue();
                                 
-                                if (prob >= 0.5 && !hipopotasemiaDetectada) {
+                                if (prob >= 0.3 && !hipopotasemiaDetectada) {
                                     hipopotasemiaDetectada = true;
                                     enfermedadDetectada = true;
-                                    diagnosticosPositivos.add("HIPOPOTASEMIA");
+                                    
+                                    String severidad = interpretarSeveridad(prob);
+                                    String diagnostico = "HIPOPOTASEMIA " + severidad;
+                                    diagnosticosPositivos.add(diagnostico);
                                     
                                     bw.write("Resultados por ciclo:\n");
-                                    bw.write("   Ciclo " + (i+1) + ": T=" + String.format("%.2f", ciclo.t.getPeak()) + 
+                                    bw.write("   Ciclo " + (i+1) + ": T=" + String.format("%.2f", tpeak) + 
                                             " mV, ST=" + String.format("%.2f", stamp) + " mV\n");
                                     bw.write("              Probabilidad: " + String.format("%.3f", prob) + "\n");
                                     
                                     bw.write("\nInterpretacion:\n");
                                     bw.write("Se detecta inversion extrema de onda T y ST muy descendido.\n");
-                                    bw.write("La probabilidad fuzzy de hipopotasemia es alta.\n\n");
-                                    bw.write("DIAGNOSTICO: HIPOPOTASEMIA DETECTADA\n");
-                                    bw.write("Justificacion: T_peak=" + String.format("%.2f", ciclo.t.getPeak()) + " mV (<-10), ST_amp=" + String.format("%.2f", stamp) + " mV, Probabilidad=" + String.format("%.3f", prob) + " (>=0.5)\n\n");
+                                    bw.write("La probabilidad fuzzy de hipopotasemia es " + severidad.toLowerCase() + ".\n\n");
+                                    bw.write("DIAGNOSTICO: " + diagnostico + "\n");
+                                    bw.write("Justificacion: T_peak=" + String.format("%.2f", tpeak) + " mV (<-12), ST_amp=" + String.format("%.2f", stamp) + " mV (<-0.5), Probabilidad=" + String.format("%.3f", prob) + "\n\n");
+                                    
+                                    System.out.println("DETECTADO: " + diagnostico);
                                     
                                     JFuzzyChart.get().chart(fbHipo.getVariable("probabilidad_hipopotasemia"), 
                                                             fbHipo.getVariable("probabilidad_hipopotasemia").getDefuzzifier(), true);
@@ -244,17 +267,11 @@ public class AnalizadorECG_Fuzzy {
                         }
                         
                         if (!hipopotasemiaDetectada) {
-                            if (ciclosEvaluados) {
-                                bw.write("Interpretacion:\n");
-                                bw.write("Aunque se detectaron ondas T invertidas, la probabilidad fuzzy\n");
-                                bw.write("no alcanza el umbral para diagnostico positivo.\n\n");
-                            } else {
-                                bw.write("Interpretacion:\n");
-                                bw.write("No se encuentra ningun ciclo con T < -10 mV ni amplitud ST < -4 mV.\n");
-                                bw.write("Todos los indicadores de hipopotasemia estan ausentes.\n\n");
-                            }
+                            bw.write("Interpretacion:\n");
+                            bw.write("No se encuentra ningun ciclo con T < -12 mV y ST < -0.5 mV.\n");
+                            bw.write("Todos los indicadores de hipopotasemia estan ausentes.\n\n");
                             bw.write("DIAGNOSTICO: No se detecto hipopotasemia\n\n");
-                            }
+                        }
                     }
                 } else {
                     bw.write("No hay ciclos completos para analizar.\n\n");
@@ -262,48 +279,51 @@ public class AnalizadorECG_Fuzzy {
                 
                 //ANALIZAR INFARTO AGUDO DE MIOCARDIO
                 bw.write("4. ANALISIS DE INFARTO AGUDO DE MIOCARDIO\n");
-                bw.write("Se evalua la elevacion significativa del segmento ST (>0.3 mV) junto con\n");
-                bw.write("valores elevados de onda T, patron tipico de infarto agudo.\n\n");
+                bw.write("Se evalua la elevacion significativa del segmento ST (>0.1 mV) junto con\n");
+                bw.write("valores elevados de onda T (>0.6 mV), patron tipico de infarto agudo.\n\n");
                 
                 if (!ciclos.isEmpty()) {
                     boolean infartoDetectado = false;
-                    boolean ciclosEvaluados = false;
-                    FunctionBlock fbIAM = fis.getFunctionBlock("ECG_Infarto");
+                    FunctionBlock fbIAM = fis.getFunctionBlock("ECG_infarto_agudo_de_miocardio");
                     
                     if (fbIAM != null) {
                         for (int i = 0; i < Math.min(3, ciclos.size()); i++) {
                             CicloECG ciclo = ciclos.get(i);
                             double stamp = AuxilarFuzzy.calcularAmplitudST(ciclo);
+                            double tpeak = ciclo.t.getPeak();
                             
-                            if (stamp > 0.1) {
-                                ciclosEvaluados = true;
+                          
+                            if (stamp > 0.1 && tpeak > 0.6) {
+                                
                                 fbIAM.setVariable("stamp", stamp);
-                                fbIAM.setVariable("tpeak", ciclo.t.getPeak());
+                                fbIAM.setVariable("tpeak", tpeak);
                                 fbIAM.evaluate();
                                 
-                                net.sourceforge.jFuzzyLogic.rule.Variable varRiesgo = fbIAM.getVariable("riesgo_infarto");
-                                if (varRiesgo == null) {
-                                    varRiesgo = fbIAM.getVariable("riesgo_infarto");
-                                }
+                                net.sourceforge.jFuzzyLogic.rule.Variable varRiesgo = fbIAM.getVariable("riesgo_infarto_de_miocardio");
                                 
                                 if (varRiesgo != null) {
                                     double riesgo = varRiesgo.getValue();
                                     
-                                    if (riesgo >= 0.7 && !infartoDetectado) {
+                                    if (riesgo >= 0.3 && !infartoDetectado) {
                                         infartoDetectado = true;
                                         enfermedadDetectada = true;
-                                        diagnosticosPositivos.add("INFARTO AGUDO DE MIOCARDIO");
+                                        
+                                        String severidad = interpretarSeveridad(riesgo);
+                                        String diagnostico = "INFARTO AGUDO DE MIOCARDIO " + severidad;
+                                        diagnosticosPositivos.add(diagnostico);
                                         
                                         bw.write("Resultados por ciclo:\n");
                                         bw.write("   Ciclo " + (i+1) + ": ST=" + String.format("%.2f", stamp) + 
-                                                " mV, T=" + String.format("%.2f", ciclo.t.getPeak()) + " mV\n");
+                                                " mV, T=" + String.format("%.2f", tpeak) + " mV\n");
                                         bw.write("              Riesgo IAM: " + String.format("%.3f", riesgo) + "\n");
                                         
                                         bw.write("\nInterpretacion:\n");
                                         bw.write("Se detecta elevacion significativa del segmento ST.\n");
-                                        bw.write("El riesgo fuzzy de infarto de miocardio agudo es alto.\n\n");
-                                        bw.write("DIAGNOSTICO: INFARTO AGUDO DE MIOCARDIO DETECTADO\n");
-                                        bw.write("Justificacion: ST_amp=" + String.format("%.2f", stamp) + " mV (>0.3), T_peak=" + String.format("%.2f", ciclo.t.getPeak()) + " mV, Riesgo_IAM=" + String.format("%.3f", riesgo) + " (>=0.7)\n\n");
+                                        bw.write("El riesgo fuzzy de infarto de miocardio agudo es " + severidad.toLowerCase() + ".\n\n");
+                                        bw.write("DIAGNOSTICO: " + diagnostico + "\n");
+                                        bw.write("Justificacion: ST_amp=" + String.format("%.2f", stamp) + " mV (>0.1), T_peak=" + String.format("%.2f", tpeak) + " mV (>0.6), Riesgo_IAM=" + String.format("%.3f", riesgo) + "\n\n");
+                                        
+                                        System.out.println("DETECTADO: " + diagnostico);
                                         
                                         JFuzzyChart.get().chart(varRiesgo, varRiesgo.getDefuzzifier(), true);
                                     }
@@ -312,15 +332,9 @@ public class AnalizadorECG_Fuzzy {
                         }
                         
                         if (!infartoDetectado) {
-                            if (ciclosEvaluados) {
-                                bw.write("Interpretacion:\n");
-                                bw.write("Aunque se detecta leve elevacion de ST, el riesgo fuzzy\n");
-                                bw.write("no alcanza el umbral para diagnostico de infarto.\n\n");
-                            } else {
-                                bw.write("Interpretacion:\n");
-                                bw.write("Ningun ciclo supera los umbrales de elevacion de ST.\n");
-                                bw.write("El diagnostico fuzzy de infarto de miocardio agudo es negativo.\n\n");
-                            }
+                            bw.write("Interpretacion:\n");
+                            bw.write("Ningun ciclo supera los umbrales de elevacion de ST (>0.1) y T (>0.6).\n");
+                            bw.write("El diagnostico fuzzy de infarto de miocardio agudo es negativo.\n\n");
                             bw.write("DIAGNOSTICO: No se detecto infarto agudo de miocardio\n\n");
                         }
                     }
@@ -344,36 +358,43 @@ public class AnalizadorECG_Fuzzy {
                             CicloECG ciclo = ciclos.get(i);
                             double duracionQT = ciclo.t.getFin() - ciclo.q.getStart();
                             
-                            fbHipoca.setVariable("duracion_qt", duracionQT);
-                            fbHipoca.evaluate();
                             
-                            double prob = fbHipoca.getVariable("probabilidad_hipocalcemia").getValue();
-                            
-                            if (prob >= 0.6 && !hipocalcemiaDetectada) {
-                                hipocalcemiaDetectada = true;
-                                enfermedadDetectada = true;
-                                diagnosticosPositivos.add("HIPOCALCEMIA");
+                            if (duracionQT > 440) {
                                 
-                                System.out.println("DETECTADO: Hipocalcemia - QT: " + String.format("%.0f", duracionQT) + " ms");
+                                fbHipoca.setVariable("duracion_qt", duracionQT);
+                                fbHipoca.evaluate();
                                 
-                                bw.write("Resultados por ciclo:\n");
-                                bw.write("     Ciclo " + (i+1) + ": QT=" + String.format("%.0f", duracionQT) + 
-                                        " ms, Probabilidad=" + String.format("%.3f", prob) + "\n");
+                                double prob = fbHipoca.getVariable("probabilidad_hipocalcemia").getValue();
                                 
-                                bw.write("\nInterpretacion:\n");
-                                bw.write("Se detecta prolongacion del intervalo QT (> 440 ms).\n");
-                                bw.write("La probabilidad fuzzy de hipocalcemia es alta.\n\n");
-                                bw.write(" DIAGNOSTICO: HIPOCALCEMIA DETECTADA\n");
-                                bw.write("Justificacion: Duracion_QT=" + String.format("%.0f", duracionQT) + " ms (>440), Probabilidad=" + String.format("%.3f", prob) + " (>=0.6)\n\n");
-                                
-                                JFuzzyChart.get().chart(fbHipoca.getVariable("probabilidad_hipocalcemia"), 
-                                                        fbHipoca.getVariable("probabilidad_hipocalcemia").getDefuzzifier(), true);
+                                if (prob >= 0.3 && !hipocalcemiaDetectada) {
+                                    hipocalcemiaDetectada = true;
+                                    enfermedadDetectada = true;
+                                    
+                                    String severidad = interpretarSeveridad(prob);
+                                    String diagnostico = "HIPOCALCEMIA " + severidad;
+                                    diagnosticosPositivos.add(diagnostico);
+                                    
+                                    System.out.println("DETECTADO: " + diagnostico + " - QT: " + String.format("%.0f", duracionQT) + " ms");
+                                    
+                                    bw.write("Resultados por ciclo:\n");
+                                    bw.write("     Ciclo " + (i+1) + ": QT=" + String.format("%.0f", duracionQT) + 
+                                            " ms, Probabilidad=" + String.format("%.3f", prob) + "\n");
+                                    
+                                    bw.write("\nInterpretacion:\n");
+                                    bw.write("Se detecta prolongacion del intervalo QT (> 440 ms).\n");
+                                    bw.write("La probabilidad fuzzy de hipocalcemia es " + severidad.toLowerCase() + ".\n\n");
+                                    bw.write("DIAGNOSTICO: " + diagnostico + "\n");
+                                    bw.write("Justificacion: Duracion_QT=" + String.format("%.0f", duracionQT) + " ms (>440), Probabilidad=" + String.format("%.3f", prob) + "\n\n");
+                                    
+                                    JFuzzyChart.get().chart(fbHipoca.getVariable("probabilidad_hipocalcemia"), 
+                                                            fbHipoca.getVariable("probabilidad_hipocalcemia").getDefuzzifier(), true);
+                                }
                             }
                         }
                         
                         if (!hipocalcemiaDetectada) {
                             bw.write("Interpretacion:\n");
-                            bw.write("Todos los intervalos QT estan dentro de valores normales (< 440 ms).\n");
+                            bw.write("Todos los intervalos QT estan dentro de valores normales (<= 440 ms).\n");
                             bw.write("La logica difusa asigna probabilidad muy baja a hipocalcemia.\n\n");
                             bw.write("DIAGNOSTICO: No se detecto hipocalcemia\n\n");
                             System.out.println("No se detecto hipocalcemia");
@@ -399,51 +420,47 @@ public class AnalizadorECG_Fuzzy {
                             double duracionQRS = ciclo.s.getFin() - ciclo.q.getStart();
                             double ausenciaP = (ciclo.p == null) ? 1.0 : 0.0;
                             
-                            fbPVC.setVariable("duracion_qrs", duracionQRS);
-                            fbPVC.setVariable("ausencia_p", ausenciaP);
-                            fbPVC.evaluate();
                             
-                            double prob = fbPVC.getVariable("probabilidad_pvc").getValue();
-                            
-                            if (prob >= 0.7 && !pvcDetectada) {
-                                pvcDetectada = true;
-                                enfermedadDetectada = true;
-                                diagnosticosPositivos.add("PVC");
+                            if (duracionQRS < 90) {
                                 
-                                System.out.println("DETECTADO: PVC - Prob: " + String.format("%.3f", prob));
+                                fbPVC.setVariable("duracion_qrs", duracionQRS);
+                                fbPVC.setVariable("ausencia_p", ausenciaP);
+                                fbPVC.evaluate();
                                 
-                                bw.write("Resultados por ciclo:\n");
-                                bw.write("Ciclo " + (i+1) + ": Duracion QRS=" + String.format("%.0f", duracionQRS) + 
-                                        " ms, Ausencia P=" + (ausenciaP == 1.0 ? "Si" : "No") + "\n");
-                                bw.write("Probabilidad PVC: " + String.format("%.3f", prob) + "\n");
+                                double prob = fbPVC.getVariable("probabilidad_pvc").getValue();
                                 
-                                bw.write("\nInterpretacion:\n");
-                                bw.write("Se detecta QRS corto (<90 ms) compatible con contraccion prematura.\n");
-                                bw.write("La probabilidad fuzzy de PVC es alta.\n\n");
-                                bw.write("DIAGNOSTICO: PVC DETECTADA\n");
-                                bw.write("Justificacion: Duracion_QRS=" + String.format("%.0f", duracionQRS) + " ms (<90), Ausencia_P=" + (ausenciaP == 1.0 ? "Si" : "No") + ", Probabilidad=" + String.format("%.3f", prob) + " (>=0.7)\n\n");
-                                
-                                JFuzzyChart.get().chart(fbPVC.getVariable("probabilidad_pvc"), 
-                                                        fbPVC.getVariable("probabilidad_pvc").getDefuzzifier(), true);
+                                if (prob >= 0.3 && !pvcDetectada) {
+                                    pvcDetectada = true;
+                                    enfermedadDetectada = true;
+                                    
+                                    String severidad = interpretarSeveridad(prob);
+                                    String diagnostico = "PVC " + severidad;
+                                    diagnosticosPositivos.add(diagnostico);
+                                    
+                                    System.out.println("DETECTADO: " + diagnostico + " - Prob: " + String.format("%.3f", prob));
+                                    
+                                    bw.write("Resultados por ciclo:\n");
+                                    bw.write("Ciclo " + (i+1) + ": Duracion QRS=" + String.format("%.0f", duracionQRS) + 
+                                            " ms, Ausencia P=" + (ausenciaP == 1.0 ? "Si" : "No") + "\n");
+                                    bw.write("Probabilidad PVC: " + String.format("%.3f", prob) + "\n");
+                                    
+                                    bw.write("\nInterpretacion:\n");
+                                    bw.write("Se detecta QRS corto (<90 ms) compatible con contraccion prematura.\n");
+                                    bw.write("La probabilidad fuzzy de PVC es " + severidad.toLowerCase() + ".\n\n");
+                                    bw.write("DIAGNOSTICO: " + diagnostico + "\n");
+                                    bw.write("Justificacion: Duracion_QRS=" + String.format("%.0f", duracionQRS) + " ms (<90), Ausencia_P=" + (ausenciaP == 1.0 ? "Si" : "No") + ", Probabilidad=" + String.format("%.3f", prob) + "\n\n");
+                                    
+                                    JFuzzyChart.get().chart(fbPVC.getVariable("probabilidad_pvc"), 
+                                                            fbPVC.getVariable("probabilidad_pvc").getDefuzzifier(), true);
+                                }
                             }
                         }
                         
                         if (!pvcDetectada) {
-                            // Calcular valores del último ciclo para justificación
-                            CicloECG ultimoCiclo = ciclos.get(Math.min(2, ciclos.size() - 1));
-                            double duracionQRS = ultimoCiclo.s.getFin() - ultimoCiclo.q.getStart();
-                            double ausenciaP = (ultimoCiclo.p == null) ? 1.0 : 0.0;
-                            
-                            fbPVC.setVariable("duracion_qrs", duracionQRS);
-                            fbPVC.setVariable("ausencia_p", ausenciaP);
-                            fbPVC.evaluate();
-                            double prob = fbPVC.getVariable("probabilidad_pvc").getValue();
-                            
                             bw.write("Interpretacion:\n");
-                            bw.write("Todos los valores se encuentran dentro del rango normal.\n");
-                            bw.write("No hay QRS ancho ni ausencia de P detectable. Se descarta PVC.\n\n");
-                            bw.write("DIAGNOSTICO: No se detecto PVC\n");
-                            bw.write("Justificacion: Duracion_QRS=" + String.format("%.0f", duracionQRS) + " ms (>=90), Ausencia_P=" + (ausenciaP == 1.0 ? "Si" : "No") + ", Probabilidad=" + String.format("%.3f", prob) + " (<0.7)\n\n");
+                            bw.write("Todos los valores se encuentran dentro del rango normal (QRS >= 90 ms).\n");
+                            bw.write("Se descarta PVC.\n\n");
+                            bw.write("DIAGNOSTICO: No se detecto PVC\n\n");
                         }
                     }
                 } else {
@@ -479,5 +496,14 @@ public class AnalizadorECG_Fuzzy {
                 e.printStackTrace();
             }
         }
-      }
+    }
+    
+    // INTERPRETAR SEVERIDAD (UNIVERSAL)
+    private static String interpretarSeveridad(double valor) {
+        if (valor >= 0.9) return "MUY GRAVE";
+        if (valor >= 0.7) return "GRAVE";
+        if (valor >= 0.45) return "MODERADA";
+        if (valor >= 0.3) return "LEVE";
+        return "AUSENTE";
+    }
 }
