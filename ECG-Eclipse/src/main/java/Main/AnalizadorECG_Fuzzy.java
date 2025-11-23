@@ -1,6 +1,7 @@
 package Main;
 
 import Clases.*;
+import Fuzzy.AuxilarFuzzy;
 import Parser.InputParser;
 import java.io.*;
 import java.util.*;
@@ -14,8 +15,6 @@ public class AnalizadorECG_Fuzzy {
     
     public static void main(String[] args) throws Exception {
         
-        System.out.println("Directorio de trabajo: " + System.getProperty("user.dir"));
-        
         String dirEnt = "inputs";
         String dirSal = "salidaFuzzy";
         
@@ -24,9 +23,8 @@ public class AnalizadorECG_Fuzzy {
         
         System.out.println("Directorio entrada: " + new File(dirEnt).getAbsolutePath());
         System.out.println("Directorio salida: " + new File(dirSal).getAbsolutePath());
-        System.out.println();
         
-        System.out.println("Cargando sistema fuzzy...");
+        System.out.println("\nCargando sistema fuzzy...");
         fis = FIS.load("src/main/resources/Reglas/diagnostico_ecg.fcl", true);
         
         if (fis == null) {
@@ -54,27 +52,18 @@ public class AnalizadorECG_Fuzzy {
                 List<Onda> ondas = InputParser.parseFile(file);
                 System.out.println("Ondas encontradas: " + ondas.size());
                 
-                // Extraer todas las ondas
-                List<Onda_P> ondasP = new ArrayList<>();
-                List<Onda_Q> ondasQ = new ArrayList<>();
-                List<Onda_R> ondasR = new ArrayList<>();
-                List<Onda_S> ondasS = new ArrayList<>();
-                List<Onda_T> ondasT = new ArrayList<>();
+                AuxilarFuzzy clOndas = AuxilarFuzzy.clasifica(ondas); 
                 
-                for (Onda o : ondas) {
-                    if (o instanceof Onda_P) ondasP.add((Onda_P) o);
-                    else if (o instanceof Onda_Q) ondasQ.add((Onda_Q) o);
-                    else if (o instanceof Onda_R) ondasR.add((Onda_R) o);
-                    else if (o instanceof Onda_S) ondasS.add((Onda_S) o);
-                    else if (o instanceof Onda_T) ondasT.add((Onda_T) o);
-                }
-                
-                System.out.println("Ondas P: " + ondasP.size() + ", Q: " + ondasQ.size() + 
-                                 ", R: " + ondasR.size() + ", S: " + ondasS.size() + 
-                                 ", T: " + ondasT.size());
-                
+                System.out.println(
+                	    "Ondas P: " + clOndas.p.size() +
+                	    ", Q: " + clOndas.q.size() + 
+                	    ", R: " + clOndas.r.size() +
+                	    ", S: " + clOndas.s.size() +
+                	    ", T: " + clOndas.t.size()
+                	);
+              
                 // Identificar ciclos completos
-                List<CicloECG> ciclos = identificarCiclos(ondasP, ondasQ, ondasR, ondasS, ondasT);
+                List<CicloECG> ciclos = AuxilarFuzzy.identificarCiclos(clOndas.p, clOndas.q, clOndas.r, clOndas.s, clOndas.t);
                 System.out.println("Ciclos completos identificados: " + ciclos.size());
                 
                 // CREAR CARPETA INDIVIDUAL PARA ESTE ARCHIVO
@@ -95,7 +84,7 @@ public class AnalizadorECG_Fuzzy {
                 List<String> diagnosticosPositivos = new ArrayList<>();
                 
                 // ANALIZAR RITMO CARDIACO
-                int ritmo = calcularRitmo(ondasQ);
+                int ritmo = AuxilarFuzzy.calcularRitmo(clOndas.q);
                 
                 bw.write("1. ANALISIS DE RITMO CARDIACO\n");
                 bw.write("Se calcula la frecuencia cardiaca a partir de los intervalos entre ondas Q,\n");
@@ -119,7 +108,7 @@ public class AnalizadorECG_Fuzzy {
                         bw.write("- Nivel taquicardia: " + String.format("%.3f", nivelTaqui) + "\n");
                         bw.write("- Estado salud ritmo: " + String.format("%.3f", estadoSalud) + "\n\n");
                         
-                        String diagnostico = interpretarRitmo(nivelBradi, nivelTaqui, estadoSalud);
+                        String diagnostico = AuxilarFuzzy.interpretarRitmo(nivelBradi, nivelTaqui, estadoSalud);
                         
                         if (estadoSalud >= 0.15) {
                             enfermedadDetectada = true;
@@ -160,13 +149,13 @@ public class AnalizadorECG_Fuzzy {
                     System.out.println("\nISQUEMIA: Analizando ciclos completos...");
                     
                     boolean isquemiaDetectada = false;
-                    FunctionBlock fbIsq = fis.getFunctionBlock("ECG_Isquemia_Coronaria");
+                    FunctionBlock fbIsq = fis.getFunctionBlock("ECG_Isquemia");
                     
                     if (fbIsq != null) {
                         
                         for (int i = 0; i < Math.min(3, ciclos.size()); i++) {
                             CicloECG ciclo = ciclos.get(i);
-                            double stamp = calcularAmplitudST(ciclo);
+                            double stamp = AuxilarFuzzy.calcularAmplitudST(ciclo);
                             double duracionST = ciclo.t.getStart() - ciclo.s.getFin();
                             
                             fbIsq.setVariable("tpeak", ciclo.t.getPeak());
@@ -174,7 +163,7 @@ public class AnalizadorECG_Fuzzy {
                             fbIsq.setVariable("duracion_st", duracionST);
                             fbIsq.evaluate();
                             
-                            double riesgo = fbIsq.getVariable("riesgo_isquemia_coronaria").getValue();
+                            double riesgo = fbIsq.getVariable("riesgo_isquemia").getValue();
                             
                             if (riesgo >= 0.6 && !isquemiaDetectada) {
                                 isquemiaDetectada = true;
@@ -225,8 +214,7 @@ public class AnalizadorECG_Fuzzy {
                             
                             if (ciclo.t.getPeak() < -10) {
                                 ciclosEvaluados = true;
-                                double stamp = calcularAmplitudST(ciclo);
-                                
+                                double stamp = AuxilarFuzzy.calcularAmplitudST(ciclo);
                                 fbHipo.setVariable("tpeak", ciclo.t.getPeak());
                                 fbHipo.setVariable("stamp", stamp);
                                 fbHipo.evaluate();
@@ -280,12 +268,12 @@ public class AnalizadorECG_Fuzzy {
                 if (!ciclos.isEmpty()) {
                     boolean infartoDetectado = false;
                     boolean ciclosEvaluados = false;
-                    FunctionBlock fbIAM = fis.getFunctionBlock("ECG_infarto_agudo_de_miocardio");
+                    FunctionBlock fbIAM = fis.getFunctionBlock("ECG_Infarto");
                     
                     if (fbIAM != null) {
                         for (int i = 0; i < Math.min(3, ciclos.size()); i++) {
                             CicloECG ciclo = ciclos.get(i);
-                            double stamp = calcularAmplitudST(ciclo);
+                            double stamp = AuxilarFuzzy.calcularAmplitudST(ciclo);
                             
                             if (stamp > 0.1) {
                                 ciclosEvaluados = true;
@@ -293,9 +281,9 @@ public class AnalizadorECG_Fuzzy {
                                 fbIAM.setVariable("tpeak", ciclo.t.getPeak());
                                 fbIAM.evaluate();
                                 
-                                net.sourceforge.jFuzzyLogic.rule.Variable varRiesgo = fbIAM.getVariable("riesgo_infarto_de_miocardio");
+                                net.sourceforge.jFuzzyLogic.rule.Variable varRiesgo = fbIAM.getVariable("riesgo_infarto");
                                 if (varRiesgo == null) {
-                                    varRiesgo = fbIAM.getVariable("riesgo_infarto_de_miocardio");
+                                    varRiesgo = fbIAM.getVariable("riesgo_infarto");
                                 }
                                 
                                 if (varRiesgo != null) {
@@ -492,107 +480,4 @@ public class AnalizadorECG_Fuzzy {
             }
         }
       }
-    
-    //METODOS AUXILIARES
-    
-    private static int calcularRitmo(List<Onda_Q> ondasQ) {
-        if (ondasQ.size() < 2) return 0;
-        
-        int primerQ = ondasQ.get(0).getStart();
-        int ultimoQ = ondasQ.get(ondasQ.size() - 1).getStart();
-        int duracion = ultimoQ - primerQ;
-        
-        if (duracion == 0) return 0;
-        
-        return (60000 * (ondasQ.size() - 1)) / duracion;
-    }
-    
-    private static List<CicloECG> identificarCiclos(List<Onda_P> ondasP, List<Onda_Q> ondasQ,
-                                                      List<Onda_R> ondasR, List<Onda_S> ondasS,
-                                                      List<Onda_T> ondasT) {
-        List<CicloECG> ciclos = new ArrayList<>();
-        
-        for (Onda_Q q : ondasQ) {
-            CicloECG ciclo = new CicloECG();
-            ciclo.q = q;
-            
-            int tiempoQ = q.getStart();
-            
-            for (Onda_P p : ondasP) {
-                if (p.getStart() < tiempoQ && (tiempoQ - p.getStart()) < 200) {
-                    ciclo.p = p;
-                }
-            }
-            
-            for (Onda_R r : ondasR) {
-                if (r.getStart() > q.getFin() && r.getStart() < q.getFin() + 100) {
-                    ciclo.r = r;
-                    break;
-                }
-            }
-            
-            int referenciaS = (ciclo.r != null) ? ciclo.r.getFin() : q.getFin();
-            for (Onda_S s : ondasS) {
-                if (s.getStart() > referenciaS && s.getStart() < referenciaS + 100) {
-                    ciclo.s = s;
-                    break;
-                }
-            }
-            
-            int tiempoReferencia = (ciclo.s != null) ? ciclo.s.getFin() : q.getFin();
-            for (Onda_T t : ondasT) {
-                if (t.getStart() > tiempoReferencia && t.getStart() < tiempoReferencia + 500) {
-                    ciclo.t = t;
-                    break;
-                }
-            }
-            
-            if (ciclo.s != null && ciclo.t != null) {
-                ciclos.add(ciclo);
-            }
-        }
-        
-        return ciclos;
-    }
-    
-    private static double calcularAmplitudST(CicloECG ciclo) {
-        double peakS = ciclo.s.getPeak();
-        double peakT = ciclo.t.getPeak();
-        
-        if (peakS < 0 && peakT < 0) {
-            return (peakS + peakT) / 2.0;
-        }
-        
-        if (peakT < -5 && peakS < 0) {
-            return Math.min(peakS, peakT / 2.0);
-        }
-        
-        return (peakS + peakT) / 2.0;
-    }
-    
-    private static String interpretarRitmo(double nivelBradi, double nivelTaqui, double estadoSalud) {
-        if (estadoSalud < 0.15) return "RITMO NORMAL";
-        
-        if (nivelBradi > 0.3) {
-            if (nivelBradi >= 0.7) return "BRADICARDIA SEVERA";
-            if (nivelBradi >= 0.4) return "BRADICARDIA MODERADA";
-            return "BRADICARDIA LEVE";
-        }
-        
-        if (nivelTaqui > 0.3) {
-            if (nivelTaqui >= 0.7) return "TAQUICARDIA SEVERA";
-            if (nivelTaqui >= 0.4) return "TAQUICARDIA MODERADA";
-            return "TAQUICARDIA LEVE";
-        }
-        
-        return "RITMO LIMITE";
-    }
-    
-    static class CicloECG {
-        Onda_P p;
-        Onda_Q q;
-        Onda_R r;
-        Onda_S s;
-        Onda_T t;
-    }
 }

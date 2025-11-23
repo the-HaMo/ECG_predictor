@@ -96,7 +96,7 @@ FUNCTION_BLOCK ECG_Isquemia
 VAR_INPUT
     tpeak : REAL;        // Peak de la onda T (en mV)
     stamp : REAL;        // Amplitud del segmento ST (en mV)
-    duracion_st : REAL;  // Duración del segmento ST (en ms)
+    duracion_st : REAL;  // Duración del segmento ST (en ms)  // No es necesario 
 END_VAR
 
 VAR_OUTPUT
@@ -411,7 +411,7 @@ FUNCTION_BLOCK ECG_PVC
 
 VAR_INPUT
     duracion_qrs : REAL;  // Duración del complejo QRS (en ms)
-    ausencia_p : REAL;    // 1.0 = no hay P previa, 0.0 = hay P previa
+    ausencia_p : REAL;    // 1.0 = no hay P previa, 0.0 = hay P previa // No es necesario 
 END_VAR
 
 VAR_OUTPUT
